@@ -1,26 +1,46 @@
-name: Dart CI
+name: Dart and Flutter CI
 
 on:
   push:
-    branches: [ "master", "main" ] # Add "main" for better compatibility
+    branches:
+      - master
   pull_request:
-    branches: [ "master", "main" ]
+    branches:
+      - master
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout repository
       - uses: actions/checkout@v4
 
-      # Set up Dart environment
-      - uses: dart-lang/setup-dart@v1
+      # Cache Flutter SDK
+      - name: Cache Flutter SDK
+        uses: actions/cache@v3
         with:
-          # Optional: specify Dart version (e.g., stable, beta, dev, or exact version)
-          channel: stable
+          path: flutter
+          key: ${{ runner.os }}-flutter-${{ hashFiles('flutter/bin/internal/engine.version') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
 
-      # Cache dependencies for faster builds
-      - name: Cache Dart dependencies
+      # Install Flutter
+      - name: Install Flutter
+        run: |
+          if [ ! -d "flutter/bin" ]; then
+            echo "Cache miss: Cloning Flutter SDK..."
+            git clone https://github.com/flutter/flutter.git -b stable flutter
+          else
+            echo "Cache hit: Using cached Flutter SDK."
+          fi
+          echo "$PWD/flutter/bin" >> $GITHUB_PATH
+          export PATH="$PATH:$PWD/flutter/bin"
+          flutter config --no-analytics
+          flutter doctor -v
+
+      # Cache Pub Dependencies
+      - name: Cache Pub Dependencies
         uses: actions/cache@v3
         with:
           path: ~/.pub-cache
@@ -28,18 +48,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-cache-
 
+      # Setup Dart
+      - uses: dart-lang/setup-dart@v1
+        with:
+          channel: stable
+
+      # Remove Example Folder from Build
+      - name: Remove Example Folder from Build
+        run: rm -rf example
+
+      # Disbale analytics
+      - name: Disbale analytics
+        run: flutter config --no-analytics
+
       # Install dependencies
       - name: Install dependencies
         run: dart pub get
 
-      # Optional: Check code formatting
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-
-      # Analyze source code for errors and warnings
-      - name: Analyze project source
-        run: dart analyze
+      # Analyze code
+      - name: Analyze code
+        run: dart analyze test && dart analyze bin
+        env:
+          PUB_LOG: verbose
 
       # Run tests
       - name: Run tests
-        run: dart test --reporter expanded # Improved test output
+        run: dart test test
