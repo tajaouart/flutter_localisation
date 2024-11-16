@@ -1,0 +1,4 @@
+arb-dir: asset/DEN
+output-dir: lib/localization/generated
+output-localization-file: app_localizations.dart
+synthetic-package: false
