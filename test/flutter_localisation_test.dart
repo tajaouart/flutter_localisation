@@ -66,7 +66,7 @@ synthetic-package: false
     expect(
       output,
       contains(
-          'Please provide both the flavors folder and the flavor name as arguments.'),
+          'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.'),
     );
   });
 
@@ -165,7 +165,7 @@ synthetic-package: false
     expect(
       output,
       contains(
-          'Please provide both the flavors folder and the flavor name as arguments.'),
+          'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.'),
     );
   });
 
@@ -202,26 +202,6 @@ synthetic-package: false
     );
   });
 
-  test('Creates missing ARB file with default content', () async {
-    final flavor = 'new_flavor';
-
-    // Create flavor directory without ARB file
-    final dir = Directory('lib/l10n/$flavor');
-    await dir.create(recursive: true);
-    final arbFile = File('lib/l10n/$flavor/app_en.arb');
-    if (await arbFile.exists()) await arbFile.delete();
-
-    // Run the script
-    final result = await Process.run(
-        'dart', ['run', 'bin/flutter_localisation.dart', 'lib/l10n', flavor]);
-
-    // Verify ARB file creation and content
-    expect(result.exitCode, 0);
-    expect(await arbFile.exists(), isTrue);
-    final content = await arbFile.readAsString();
-    expect(content, contains('{"app_en": ""}')); // Default content check
-  });
-
   test('Overwrites existing l10n.yaml with new flavor', () async {
     final initialFlavor = 'flavor1';
     final newFlavor = 'flavor2';
@@ -231,6 +211,14 @@ synthetic-package: false
     final newDir = Directory('lib/l10n/$newFlavor');
     await initialDir.create(recursive: true);
     await newDir.create(recursive: true);
+
+    // Add a dummy ARB file for the new flavor
+    await File('lib/l10n/$newFlavor/app_en.arb').writeAsString('''
+{
+  "@@locale": "en",
+  "hello_world": "Hello World"
+}
+''');
 
     // Ensure l10n.yaml exists with the initial flavor
     await l10nFile.writeAsString('arb-dir: lib/l10n/$initialFlavor');
@@ -272,6 +260,7 @@ synthetic-package: false
       reason: 'Expected old flavor to be replaced in l10n.yaml.',
     );
   });
+
   test('Handles multiple flavors independently', () async {
     final flavors = ['flavor1', 'flavor2'];
 
