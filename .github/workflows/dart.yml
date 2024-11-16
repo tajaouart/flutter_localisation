@@ -1,0 +1,45 @@
+name: Dart CI
+
+on:
+  push:
+    branches: [ "master", "main" ] # Add "main" for better compatibility
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Set up Dart environment
+      - uses: dart-lang/setup-dart@v1
+        with:
+          # Optional: specify Dart version (e.g., stable, beta, dev, or exact version)
+          channel: stable
+
+      # Cache dependencies for faster builds
+      - name: Cache Dart dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-cache-${{ hashFiles('pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-cache-
+
+      # Install dependencies
+      - name: Install dependencies
+        run: dart pub get
+
+      # Optional: Check code formatting
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      # Analyze source code for errors and warnings
+      - name: Analyze project source
+        run: dart analyze
+
+      # Run tests
+      - name: Run tests
+        run: dart test --reporter expanded # Improved test output
