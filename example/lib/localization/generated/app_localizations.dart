@@ -96,14 +96,32 @@ abstract class AppLocalizations {
   /// No description provided for @title.
   ///
   /// In en, this message translates to:
-  /// **'Welcome'**
+  /// **'Flutter Localization Demo'**
   String get title;
 
-  /// No description provided for @message.
+  /// No description provided for @greeting.
   ///
   /// In en, this message translates to:
-  /// **'Hello, world!'**
-  String get message;
+  /// **'Hello {name}, welcome again!'**
+  String greeting(String name);
+
+  /// No description provided for @hello_worl.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello {name}, you have {count} items in {categories} categories.'**
+  String hello_worl(String name, String count, String categories);
+
+  /// No description provided for @thankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for using our app!'**
+  String get thankYou;
+
+  /// No description provided for @goodbyeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Goodbye! Have a great day!'**
+  String get goodbyeMessage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

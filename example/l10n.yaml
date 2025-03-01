@@ -1,4 +1,4 @@
-arb-dir: asset/DEN
+arb-dir: rexel5/Default
 output-dir: lib/localization/generated
 output-localization-file: app_localizations.dart
 synthetic-package: false
