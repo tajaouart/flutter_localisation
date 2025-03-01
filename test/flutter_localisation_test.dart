@@ -35,8 +35,12 @@ synthetic-package: false
     await File('lib/l10n/test_flavor/app_en.arb').writeAsString('{}');
 
     // Run the localization generator script
-    final result = await Process.run(
-        'dart', ['run', 'bin/flutter_localisation.dart', 'lib/l10n', flavor]);
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      'lib/l10n',
+      flavor,
+    ]);
 
     // Ensure the script ran successfully
     print('stdout: ${result.stdout}');
@@ -47,16 +51,15 @@ synthetic-package: false
     final updatedContent = await l10nFile.readAsString();
 
     // Check if the arb-dir was correctly updated
-    expect(
-      updatedContent.contains('arb-dir: lib/l10n/$flavor'),
-      isTrue,
-    );
+    expect(updatedContent.contains('arb-dir: lib/l10n/$flavor'), isTrue);
   });
 
   test('should log an error if no flavor is provided', () async {
     // Run the localization generator script without arguments
-    final result =
-        await Process.run('dart', ['run', 'bin/flutter_localisation.dart']);
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+    ]);
 
     // Ensure the script exits with an error
     expect(result.exitCode, isNot(0));
@@ -66,7 +69,8 @@ synthetic-package: false
     expect(
       output,
       contains(
-          'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.'),
+        'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.',
+      ),
     );
   });
 
@@ -78,8 +82,12 @@ synthetic-package: false
     await _setReadOnly(l10nFile, true);
 
     // Run the localization generator script
-    final result = await Process.run(
-        'dart', ['run', 'bin/flutter_localisation.dart', 'lib/l10n', flavor]);
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      'lib/l10n',
+      flavor,
+    ]);
 
     // Log stdout and stderr for debugging
     print('stdout: ${result.stdout}');
@@ -112,8 +120,12 @@ synthetic-package: false
     await File('lib/l10n/test_flavor/app_en.arb').writeAsString('{}');
 
     // Run the localization generator script
-    final result = await Process.run(
-        'dart', ['run', 'bin/flutter_localisation.dart', 'lib/l10n', flavor]);
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      'lib/l10n',
+      flavor,
+    ]);
 
     // Ensure the script ran successfully
     print('stdout: ${result.stdout}');
@@ -138,8 +150,12 @@ synthetic-package: false
     await File('lib/l10n/$flavor/app_en.arb').writeAsString('{}');
 
     // Run the script
-    final result = await Process.run(
-        'dart', ['run', 'bin/flutter_localisation.dart', 'lib/l10n', flavor]);
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      'lib/l10n',
+      flavor,
+    ]);
 
     // Check script execution
     expect(result.exitCode, 0, reason: result.stderr);
@@ -151,8 +167,10 @@ synthetic-package: false
 
   test('Logs error if no flavor is provided', () async {
     // Run the script without arguments
-    final result =
-        await Process.run('dart', ['run', 'bin/flutter_localisation.dart']);
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+    ]);
 
     // Debug outputs
     print('stdout: ${result.stdout}');
@@ -165,7 +183,8 @@ synthetic-package: false
     expect(
       output,
       contains(
-          'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.'),
+        'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.',
+      ),
     );
   });
 
@@ -179,10 +198,12 @@ synthetic-package: false
     }
 
     // Run the script with an invalid flavor
-    final result = await Process.run(
-      'dart',
-      ['run', 'bin/flutter_localisation.dart', 'lib/l10n', invalidFlavor],
-    );
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      'lib/l10n',
+      invalidFlavor,
+    ]);
 
     // Log stdout and stderr for debugging
     print('stdout: ${result.stdout}');
@@ -190,8 +211,11 @@ synthetic-package: false
     print('Exit Code: ${result.exitCode}');
 
     // Verify the script exits with an error
-    expect(result.exitCode, isNot(0),
-        reason: 'Expected non-zero exit code for invalid flavor folder.');
+    expect(
+      result.exitCode,
+      isNot(0),
+      reason: 'Expected non-zero exit code for invalid flavor folder.',
+    );
 
     // Verify error message contains the invalid folder
     final output = result.stdout + result.stderr; // Combine both streams
@@ -227,10 +251,12 @@ synthetic-package: false
     print('Initial l10n.yaml content: ${await l10nFile.readAsString()}');
 
     // Run the script for the new flavor
-    final result = await Process.run(
-      'dart',
-      ['run', 'bin/flutter_localisation.dart', 'lib/l10n', newFlavor],
-    );
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      'lib/l10n',
+      newFlavor,
+    ]);
 
     // Log stdout, stderr, and exit code for debugging
     print('stdout: ${result.stdout}');
@@ -273,8 +299,12 @@ synthetic-package: false
 
     // Process both flavors
     for (var flavor in flavors) {
-      final result = await Process.run(
-          'dart', ['run', 'bin/flutter_localisation.dart', 'lib/l10n', flavor]);
+      final result = await Process.run('dart', [
+        'run',
+        'bin/flutter_localisation.dart',
+        'lib/l10n',
+        flavor,
+      ]);
       expect(result.exitCode, 0);
     }
 
@@ -283,6 +313,47 @@ synthetic-package: false
       final arbFile = File('lib/l10n/$flavor/app_en.arb');
       expect(await arbFile.exists(), isTrue);
     }
+  });
+
+  test('Ensures arb-dir path is updated correctly without duplication', () async {
+    final flavorsFolder = 'lib/l10n';
+    final flavor = 'test_flavor';
+
+    // Ensure the test flavor directory and ARB file exist
+    final dir = Directory('$flavorsFolder/$flavor');
+    await dir.create(recursive: true);
+    await File('$flavorsFolder/$flavor/app_en.arb').writeAsString('{}');
+
+    // Run the localization generator script
+    final result = await Process.run('dart', [
+      'run',
+      'bin/flutter_localisation.dart',
+      flavorsFolder,
+      flavor,
+    ]);
+
+    // Ensure the script ran successfully
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    expect(result.exitCode, 0, reason: result.stderr);
+
+    // Read the updated l10n.yaml content
+    final updatedContent = await l10nFile.readAsString();
+
+    // Verify that arb-dir is set correctly
+    final expectedPath = 'arb-dir: $flavorsFolder/$flavor';
+    expect(
+      updatedContent.contains(expectedPath),
+      isTrue,
+      reason: 'Expected arb-dir to be correctly updated to $expectedPath',
+    );
+
+    // Ensure we do not have incorrect duplicated paths like "lib/l10n/lib/l10n"
+    expect(
+      updatedContent.contains('arb-dir: $flavorsFolder/$flavorsFolder/$flavor'),
+      isFalse,
+      reason: 'arb-dir path should not be duplicated',
+    );
   });
 
   group('Localization Generator (End-to-End)', () {
@@ -342,10 +413,12 @@ synthetic-package: false
       // Run the localization generator script
       final scriptPath =
           '${Directory.current.path}/bin/flutter_localisation.dart';
-      final result = await Process.run(
-        'dart',
-        ['run', scriptPath, 'lib/l10n', 'test_flavor'],
-      );
+      final result = await Process.run('dart', [
+        'run',
+        scriptPath,
+        'lib/l10n',
+        'test_flavor',
+      ]);
 
       // Verify script ran successfully
       print('stdout: ${result.stdout}');
@@ -353,14 +426,22 @@ synthetic-package: false
       expect(result.exitCode, 0, reason: 'Script execution failed.');
 
       // Verify Spanish and English localization files exist
-      final enGeneratedFile =
-          File('${generatedDir.path}/app_localizations_en.dart');
-      final esGeneratedFile =
-          File('${generatedDir.path}/app_localizations_es.dart');
-      expect(await enGeneratedFile.exists(), isTrue,
-          reason: 'English localization file not found.');
-      expect(await esGeneratedFile.exists(), isTrue,
-          reason: 'Spanish localization file not found.');
+      final enGeneratedFile = File(
+        '${generatedDir.path}/app_localizations_en.dart',
+      );
+      final esGeneratedFile = File(
+        '${generatedDir.path}/app_localizations_es.dart',
+      );
+      expect(
+        await enGeneratedFile.exists(),
+        isTrue,
+        reason: 'English localization file not found.',
+      );
+      expect(
+        await esGeneratedFile.exists(),
+        isTrue,
+        reason: 'Spanish localization file not found.',
+      );
 
       // Verify Spanish translation exists in the generated file
       final esGeneratedContent = await esGeneratedFile.readAsString();
@@ -384,8 +465,10 @@ synthetic-package: false
 }
 
 Future<void> _setReadOnly(File file, bool readOnly) async {
-  final result =
-      await Process.run('chmod', [readOnly ? '444' : '644', file.path]);
+  final result = await Process.run('chmod', [
+    readOnly ? '444' : '644',
+    file.path,
+  ]);
   if (result.exitCode != 0) {
     throw Exception('Failed to change file permissions: ${result.stderr}');
   }

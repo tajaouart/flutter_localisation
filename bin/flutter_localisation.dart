@@ -19,7 +19,8 @@ Future<void> main(List<String> args) async {
   final l10nFile = File('l10n.yaml');
 
   _logger.info(
-      'Generating localization files for flavor: $flavor, using flavors folder: $flavorsFolder');
+    'Generating localization files for flavor: $flavor, using flavors folder: $flavorsFolder',
+  );
 
   try {
     // Validate the flavor folder exists
@@ -36,7 +37,8 @@ Future<void> main(List<String> args) async {
     final arbFiles = await _getArbFiles(flavorDirectory);
     if (arbFiles.isEmpty) {
       _logger.severe(
-          'No ARB files found in flavor folder: $flavorsFolder/$flavor');
+        'No ARB files found in flavor folder: $flavorsFolder/$flavor',
+      );
       exit(1);
     }
 
@@ -59,7 +61,10 @@ Future<void> main(List<String> args) async {
 }
 
 Future<void> _ensureL10nFile(
-    File l10nFile, String flavorsFolder, String flavor) async {
+  File l10nFile,
+  String flavorsFolder,
+  String flavor,
+) async {
   if (!await l10nFile.exists()) {
     _logger.info('l10n.yaml does not exist. Creating a new one.');
     await l10nFile.writeAsString('''
@@ -75,8 +80,9 @@ synthetic-package: false
   _logger.info('Original l10n.yaml content:\n$l10nContent');
 
   final updatedContent = l10nContent.replaceFirstMapped(
-    RegExp(r'arb-dir: (.*)'),
-    (match) => 'arb-dir: $flavorsFolder/$flavor',
+    RegExp(r'arb-dir:.*'),
+    (match) =>
+        'arb-dir: ${flavorsFolder.replaceAll(RegExp(r'/$'), '')}/$flavor',
   );
 
   _logger.info('Updated l10n.yaml content:\n$updatedContent');
