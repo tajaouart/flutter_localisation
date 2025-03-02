@@ -15,3 +15,6 @@
     - Handling errors during file reading and writing.
     - Logging error if ARB directory does not exist.
 - Documentation for installation and usage.
+
+## 1.0.1
+- Fixed Path issue.
