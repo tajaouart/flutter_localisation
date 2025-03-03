@@ -18,3 +18,6 @@
 
 ## 1.0.1
 - Fixed Path issue.
+- 
+## 1.0.2
+- use escaping.

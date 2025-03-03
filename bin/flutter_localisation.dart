@@ -72,6 +72,8 @@ arb-dir: $flavorsFolder/$flavor
 output-dir: lib/localization/generated
 output-localization-file: app_localizations.dart
 synthetic-package: false
+nullable-getter: false
+use-escaping: true
 ''');
     return;
   }
