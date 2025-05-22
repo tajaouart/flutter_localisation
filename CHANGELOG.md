@@ -21,3 +21,6 @@
 - 
 ## 1.0.2
 - use escaping.
+
+## 1.0.3
+- Updated ReadMe & example app.

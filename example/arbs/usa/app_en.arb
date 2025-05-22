@@ -1,0 +1,21 @@
+{
+  "@@locale": "en",
+  "appName": "USA App",
+  "title": "Flutter Localization Demo",
+  "greeting": "Hello {name}, welcome!",
+  "@greeting": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "hello_world": "Hello {name}, you have {count} items in {categories} categories.",
+  "@hello_world": {
+    "placeholders": {
+      "name": {},
+      "count": {},
+      "categories": {}
+    }
+  },
+  "thankYou": "Thank you for using our app!",
+  "goodbyeMessage": "Goodbye! Have a great day!"
+}

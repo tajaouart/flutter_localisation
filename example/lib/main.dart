@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'home_page.dart';
 import 'localization/generated/app_localizations.dart';
@@ -34,11 +33,7 @@ class _MyAppState extends State<MyApp> {
         useMaterial3: true,
       ),
       supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        AppLocalizations.delegate, // Use the generated delegate
-      ],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: MyHomePage(onLocaleChange: _changeLanguage),
     );
   }

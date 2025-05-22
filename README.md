@@ -1,42 +1,86 @@
 # Flutter Localization Tool
 
-This project is a Dart-based localization tool tailored for [Flutter Localization SaaS](https://flutterlocalization.com/) users. It handles ARB files and generates the corresponding Dart localization classes efficiently.
+This project is a Dart-based localization tool tailored for [Flutter Localization SaaS](https://flutterlocalisation.com/) users. It handles ARB files and generates the corresponding Dart localization classes efficiently.
+
+## Features
+
+- Parses ARB localization files
+- Generates strongly typed localization classes for Flutter
+- Supports flavor-based localization structure
+- Git integration (GitHub, GitLab, Bitbucket)
 
 ---
 
 ## Installation
 
-1. Clone the repository:
+1. Activate the package globally:
 
-git clone https://github.com/your-repo/flutter-localisation.git  
-cd flutter-localisation
+```bash
+dart pub global activate flutter_localisation
+```
 
-2. Install Dart and Flutter dependencies:
+2. Ensure the Dart bin directory is in your system’s PATH:
 
-dart pub get  
-flutter pub get
+Add the following to your shell config file (e.g., `.bashrc` or `.zshrc`):
 
----
+```bash
+export PATH="$PATH":"$HOME/.pub-cache/bin"
+```
+
+## Project Setup
+
+Before generating localization files:
+
+1. Link your project to a Git repository (GitHub, GitLab, or Bitbucket).
+2. Clone the ARB file repository into your Flutter project directory.
 
 ## Usage
 
-### Running the Localization Tool
+### Generate Localization Files
 
-To generate localization files for a specific flavor, run the following command:
+Run the following command to generate localization code for a specific flavor:
 
-dart run bin/flutter_localisation.dart <flavors-folder> <flavor-name>
+```bash
+flutter_localisation [arb_directory] [flavor]
+```
 
 Example:
+```bash
+flutter_localisation myArbs usa
+```
 
-dart run bin/flutter_localisation.dart lib/l10n test_flavor
+## Flutter Project Setup
 
-### Key Steps
+1. Add dependencies:
 
-1. **Create ARB Files**:  
-   Add localization ARB files in the relevant flavor folder (e.g., `lib/l10n/test_flavor/app_en.arb`).
+```bash
+flutter pub add flutter_localizations --sdk=flutter
+flutter pub add intl:any
+```
 
-2. **Ensure `flutter: generate: true` in `pubspec.yaml`**:  
-   Add the following section in your `pubspec.yaml`:
+2. Enable code generation in `pubspec.yaml`:
 
-flutter:  
-generate: true
+```yaml
+flutter: 
+  generate: true
+```
+
+## Integrate in Your Flutter App
+
+In your `MaterialApp` widget:
+
+```dart
+MaterialApp(
+  title: 'Localizations Sample App',
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+)
+```
+
+Example usage in AppBar:
+
+```dart
+appBar: AppBar(
+  title: Text(AppLocalizations.of(context)!.helloWorld),
+),
+```

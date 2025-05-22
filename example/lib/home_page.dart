@@ -11,7 +11,7 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Locale currentLocale = Localizations.localeOf(context);
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -28,19 +28,25 @@ class MyHomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Animated Lottie Illustration for better UX
             const SizedBox(height: 20),
 
-            // Greeting Section
+            Text(
+              'Flavor : ${loc.appName}',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 20),
             _buildInfoCard(
-              title: loc.greeting('Mounir'),
-              subtitle: loc.hello_worl('Mounir', '15', '4'),
+              title: loc.greeting('John'),
+              subtitle: loc.hello_world('John', '15', '4'),
               icon: Icons.translate,
             ),
 
             const SizedBox(height: 20),
 
-            // Another Example Card
             _buildInfoCard(
               title: loc.thankYou,
               subtitle: loc.goodbyeMessage,

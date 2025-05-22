@@ -1,0 +1,9 @@
+{
+  "@@locale": "es",
+  "appName": "USA App",
+  "title": "Demostración de localización de Flutter",
+  "greeting": "Hola {name}, bienvenido!",
+  "hello_world": "Hola {name}, tienes {count} artículos en {categories} categorías.",
+  "thankYou": "¡Gracias por usar nuestra aplicación!",
+  "goodbyeMessage": "¡Adiós! ¡Que tengas un gran día!"
+}
