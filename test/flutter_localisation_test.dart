@@ -1,11 +1,68 @@
 import 'dart:io';
+import 'dart:math';
 
+import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
-  final l10nFile = File('l10n.yaml');
+  // ✅ SÉCURISÉ : Utiliser un dossier temporaire unique
+  late Directory testDir;
+  late File l10nFile;
+  late String projectRoot;
+  late String scriptPath;
+
+  setUpAll(() async {
+    // Sauvegarder le répertoire du projet
+    projectRoot = Directory.current.path;
+    scriptPath = path.join(projectRoot, 'bin', 'flutter_localisation.dart');
+
+    // Vérifier que le script existe
+    if (!await File(scriptPath).exists()) {
+      throw Exception('Script not found: $scriptPath');
+    }
+
+    // Créer un dossier temporaire unique pour tous les tests
+    final tempDir = Directory.systemTemp;
+    final randomId = Random().nextInt(999999);
+    testDir = Directory(
+        path.join(tempDir.path, 'flutter_localisation_test_$randomId'));
+    await testDir.create(recursive: true);
+
+    print('🧪 Tests running in: ${testDir.path}');
+    print('📄 Script path: $scriptPath');
+  });
+
+  tearDownAll(() async {
+    // ✅ SÉCURISÉ : Supprimer seulement le dossier temporaire
+    if (await testDir.exists()) {
+      await testDir.delete(recursive: true);
+      print('🧹 Cleaned up test directory: ${testDir.path}');
+    }
+  });
 
   setUp(() async {
+    l10nFile = File(path.join(testDir.path, 'l10n.yaml'));
+
+    // ✅ AJOUT : Créer un pubspec.yaml minimal pour les tests
+    final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
+    await pubspecFile.writeAsString('''
+name: test_project
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+flutter:
+  generate: true  # ✅ IMPORTANT pour flutter gen-l10n
+''');
+
     // Ensure l10n.yaml has default content
     await l10nFile.writeAsString('''
 arb-dir: lib/l10n/default
@@ -16,13 +73,16 @@ synthetic-package: false
   });
 
   tearDown(() async {
+    // ✅ SÉCURISÉ : Nettoyer seulement les fichiers de test
     if (await l10nFile.exists()) {
       await _setReadOnly(l10nFile, false);
       await l10nFile.delete();
     }
-    final dir = Directory('lib/');
-    if (await dir.exists()) {
-      await dir.delete(recursive: true);
+
+    // Nettoyer le lib/ dans le dossier de test seulement
+    final testLibDir = Directory(path.join(testDir.path, 'lib'));
+    if (await testLibDir.exists()) {
+      await testLibDir.delete(recursive: true);
     }
   });
 
@@ -30,17 +90,16 @@ synthetic-package: false
     final flavor = 'test_flavor';
 
     // Ensure the test flavor directory and ARB file exist
-    final dir = Directory('lib/l10n/test_flavor');
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
     await dir.create(recursive: true);
-    await File('lib/l10n/test_flavor/app_en.arb').writeAsString('{}');
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
 
     // Run the localization generator script
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      'lib/l10n',
-      flavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor],
+      workingDirectory: testDir.path,
+    );
 
     // Ensure the script ran successfully
     print('stdout: ${result.stdout}');
@@ -56,10 +115,11 @@ synthetic-package: false
 
   test('should log an error if no flavor is provided', () async {
     // Run the localization generator script without arguments
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath],
+      workingDirectory: testDir.path,
+    );
 
     // Ensure the script exits with an error
     expect(result.exitCode, isNot(0));
@@ -82,12 +142,11 @@ synthetic-package: false
     await _setReadOnly(l10nFile, true);
 
     // Run the localization generator script
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      'lib/l10n',
-      flavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor],
+      workingDirectory: testDir.path,
+    );
 
     // Log stdout and stderr for debugging
     print('stdout: ${result.stdout}');
@@ -98,12 +157,10 @@ synthetic-package: false
 
     // Check if the error message was logged
     final output = result.stdout + result.stderr;
-    // Update to check for the correct error message
     expect(output, contains('Invalid flavor folder: lib/l10n/test_flavor'));
 
     // Clean up
     await _setReadOnly(l10nFile, false);
-    await l10nFile.delete();
   });
 
   test('should create l10n.yaml from scratch if it does not exist', () async {
@@ -115,17 +172,16 @@ synthetic-package: false
     }
 
     // Ensure the test flavor directory and ARB file exist
-    final dir = Directory('lib/l10n/test_flavor');
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
     await dir.create(recursive: true);
-    await File('lib/l10n/test_flavor/app_en.arb').writeAsString('{}');
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
 
     // Run the localization generator script
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      'lib/l10n',
-      flavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor],
+      workingDirectory: testDir.path,
+    );
 
     // Ensure the script ran successfully
     print('stdout: ${result.stdout}');
@@ -146,16 +202,16 @@ synthetic-package: false
     final flavor = 'test_flavor';
 
     // Create test flavor directory and dummy ARB file
-    await Directory('lib/l10n/$flavor').create(recursive: true);
-    await File('lib/l10n/$flavor/app_en.arb').writeAsString('{}');
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/$flavor'));
+    await dir.create(recursive: true);
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
 
     // Run the script
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      'lib/l10n',
-      flavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor],
+      workingDirectory: testDir.path,
+    );
 
     // Check script execution
     expect(result.exitCode, 0, reason: result.stderr);
@@ -167,10 +223,11 @@ synthetic-package: false
 
   test('Logs error if no flavor is provided', () async {
     // Run the script without arguments
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath],
+      workingDirectory: testDir.path,
+    );
 
     // Debug outputs
     print('stdout: ${result.stdout}');
@@ -191,19 +248,12 @@ synthetic-package: false
   test('Handles invalid flavor folder gracefully', () async {
     final invalidFlavor = 'nonexistent_flavor';
 
-    // Ensure the flavor directory does not exist
-    final invalidDir = Directory('lib/l10n/$invalidFlavor');
-    if (await invalidDir.exists()) {
-      await invalidDir.delete(recursive: true);
-    }
-
     // Run the script with an invalid flavor
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      'lib/l10n',
-      invalidFlavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', invalidFlavor],
+      workingDirectory: testDir.path,
+    );
 
     // Log stdout and stderr for debugging
     print('stdout: ${result.stdout}');
@@ -218,7 +268,7 @@ synthetic-package: false
     );
 
     // Verify error message contains the invalid folder
-    final output = result.stdout + result.stderr; // Combine both streams
+    final output = result.stdout + result.stderr;
     expect(
       output,
       contains('Invalid flavor folder: lib/l10n/$invalidFlavor'),
@@ -231,13 +281,14 @@ synthetic-package: false
     final newFlavor = 'flavor2';
 
     // Create the required directories
-    final initialDir = Directory('lib/l10n/$initialFlavor');
-    final newDir = Directory('lib/l10n/$newFlavor');
+    final initialDir =
+        Directory(path.join(testDir.path, 'lib/l10n/$initialFlavor'));
+    final newDir = Directory(path.join(testDir.path, 'lib/l10n/$newFlavor'));
     await initialDir.create(recursive: true);
     await newDir.create(recursive: true);
 
     // Add a dummy ARB file for the new flavor
-    await File('lib/l10n/$newFlavor/app_en.arb').writeAsString('''
+    await File(path.join(newDir.path, 'app_en.arb')).writeAsString('''
 {
   "@@locale": "en",
   "hello_world": "Hello World"
@@ -251,12 +302,11 @@ synthetic-package: false
     print('Initial l10n.yaml content: ${await l10nFile.readAsString()}');
 
     // Run the script for the new flavor
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      'lib/l10n',
-      newFlavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', newFlavor],
+      workingDirectory: testDir.path,
+    );
 
     // Log stdout, stderr, and exit code for debugging
     print('stdout: ${result.stdout}');
@@ -292,45 +342,45 @@ synthetic-package: false
 
     // Create directories and ARB files for both flavors
     for (var flavor in flavors) {
-      final dir = Directory('lib/l10n/$flavor');
+      final dir = Directory(path.join(testDir.path, 'lib/l10n/$flavor'));
       await dir.create(recursive: true);
-      await File('lib/l10n/$flavor/app_en.arb').writeAsString('{}');
+      await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
     }
 
     // Process both flavors
     for (var flavor in flavors) {
-      final result = await Process.run('dart', [
-        'run',
-        'bin/flutter_localisation.dart',
-        'lib/l10n',
-        flavor,
-      ]);
+      final result = await Process.run(
+        'dart',
+        ['run', scriptPath, 'lib/l10n', flavor],
+        workingDirectory: testDir.path,
+      );
       expect(result.exitCode, 0);
     }
 
     // Verify files remain independent
     for (var flavor in flavors) {
-      final arbFile = File('lib/l10n/$flavor/app_en.arb');
+      final arbFile =
+          File(path.join(testDir.path, 'lib/l10n/$flavor/app_en.arb'));
       expect(await arbFile.exists(), isTrue);
     }
   });
 
-  test('Ensures arb-dir path is updated correctly without duplication', () async {
+  test('Ensures arb-dir path is updated correctly without duplication',
+      () async {
     final flavorsFolder = 'lib/l10n';
     final flavor = 'test_flavor';
 
     // Ensure the test flavor directory and ARB file exist
-    final dir = Directory('$flavorsFolder/$flavor');
+    final dir = Directory(path.join(testDir.path, '$flavorsFolder/$flavor'));
     await dir.create(recursive: true);
-    await File('$flavorsFolder/$flavor/app_en.arb').writeAsString('{}');
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
 
     // Run the localization generator script
-    final result = await Process.run('dart', [
-      'run',
-      'bin/flutter_localisation.dart',
-      flavorsFolder,
-      flavor,
-    ]);
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, flavorsFolder, flavor],
+      workingDirectory: testDir.path,
+    );
 
     // Ensure the script ran successfully
     print('stdout: ${result.stdout}');
@@ -357,21 +407,22 @@ synthetic-package: false
   });
 
   group('Localization Generator (End-to-End)', () {
-    late File l10nFile;
+    late File groupL10nFile;
     late File arbEnFile;
     late File arbEsFile;
-    final generatedDir = Directory('lib/localization/generated');
+    late Directory generatedDir;
 
     setUp(() async {
-      // Ensure directories exist
-      final l10nDir = Directory('lib/l10n/test_flavor');
-      if (!await l10nDir.exists()) {
-        await l10nDir.create(recursive: true);
-      }
+      // ✅ SÉCURISÉ : Utiliser le dossier de test
+      final l10nDir =
+          Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+      await l10nDir.create(recursive: true);
 
-      l10nFile = File('l10n.yaml');
-      arbEnFile = File('lib/l10n/test_flavor/app_en.arb');
-      arbEsFile = File('lib/l10n/test_flavor/app_es.arb');
+      groupL10nFile = File(path.join(testDir.path, 'l10n.yaml'));
+      arbEnFile = File(path.join(l10nDir.path, 'app_en.arb'));
+      arbEsFile = File(path.join(l10nDir.path, 'app_es.arb'));
+      generatedDir =
+          Directory(path.join(testDir.path, 'lib/localization/generated'));
 
       // Write ARB files (English and Spanish)
       await arbEnFile.writeAsString('''
@@ -388,7 +439,7 @@ synthetic-package: false
 ''');
 
       // Write initial l10n.yaml
-      await l10nFile.writeAsString('''
+      await groupL10nFile.writeAsString('''
 arb-dir: lib/l10n/test_flavor
 output-dir: lib/localization/generated
 output-localization-file: app_localizations.dart
@@ -397,28 +448,24 @@ synthetic-package: false
     });
 
     tearDown(() async {
-      // Delete the entire lib directory recursively
-      final libDir = Directory('lib');
-      if (await libDir.exists()) {
-        await libDir.delete(recursive: true);
+      // ✅ SÉCURISÉ : Nettoyer seulement dans le dossier de test
+      final testLibDir = Directory(path.join(testDir.path, 'lib'));
+      if (await testLibDir.exists()) {
+        await testLibDir.delete(recursive: true);
       }
 
-      // Clean up l10n.yaml if it exists
-      if (await l10nFile.exists()) {
-        await l10nFile.delete();
+      if (await groupL10nFile.exists()) {
+        await groupL10nFile.delete();
       }
     });
 
     test('Generates translations and updates correctly', () async {
       // Run the localization generator script
-      final scriptPath =
-          '${Directory.current.path}/bin/flutter_localisation.dart';
-      final result = await Process.run('dart', [
-        'run',
-        scriptPath,
-        'lib/l10n',
-        'test_flavor',
-      ]);
+      final result = await Process.run(
+        'dart',
+        ['run', scriptPath, 'lib/l10n', 'test_flavor'],
+        workingDirectory: testDir.path,
+      );
 
       // Verify script ran successfully
       print('stdout: ${result.stdout}');
@@ -427,10 +474,10 @@ synthetic-package: false
 
       // Verify Spanish and English localization files exist
       final enGeneratedFile = File(
-        '${generatedDir.path}/app_localizations_en.dart',
+        path.join(generatedDir.path, 'app_localizations_en.dart'),
       );
       final esGeneratedFile = File(
-        '${generatedDir.path}/app_localizations_es.dart',
+        path.join(generatedDir.path, 'app_localizations_es.dart'),
       );
       expect(
         await enGeneratedFile.exists(),

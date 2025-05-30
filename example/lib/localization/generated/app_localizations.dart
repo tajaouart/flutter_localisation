@@ -100,41 +100,41 @@ abstract class AppLocalizations {
     Locale('fr'),
   ];
 
-  /// No description provided for @appName.
+  /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Mexico App'**
-  String get appName;
+  /// **'USA App'**
+  String get appTitle;
 
-  /// No description provided for @title.
+  /// No description provided for @hello.
   ///
   /// In en, this message translates to:
-  /// **'Flutter Localization Demo'**
-  String get title;
+  /// **'Hello {name}!'**
+  String hello(Object name);
 
-  /// No description provided for @greeting.
+  /// No description provided for @welcomeMessage.
   ///
   /// In en, this message translates to:
-  /// **'Hello {name}, welcome!'**
-  String greeting(Object name);
+  /// **'Welcome back, {username}!'**
+  String welcomeMessage(Object username);
 
-  /// No description provided for @hello_world.
+  /// No description provided for @simpleGreeting.
   ///
   /// In en, this message translates to:
-  /// **'Hello {name}, you have {count} items in {categories} categories.'**
-  String hello_world(Object name, Object count, Object categories);
+  /// **'Good morning!'**
+  String get simpleGreeting;
 
-  /// No description provided for @thankYou.
+  /// No description provided for @itemsInCart.
   ///
   /// In en, this message translates to:
-  /// **'Thank you for using our app!'**
-  String get thankYou;
+  /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
+  String itemsInCart(num count);
 
-  /// No description provided for @goodbyeMessage.
+  /// No description provided for @refresh.
   ///
   /// In en, this message translates to:
-  /// **'Goodbye! Have a great day!'**
-  String get goodbyeMessage;
+  /// **'Refresh Translations'**
+  String get refresh;
 }
 
 class _AppLocalizationsDelegate

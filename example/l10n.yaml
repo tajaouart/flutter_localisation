@@ -1,4 +1,4 @@
-arb-dir: arbs/mexico
+arb-dir: arbs/usa
 output-dir: lib/localization/generated
 output-localization-file: app_localizations.dart
 synthetic-package: false

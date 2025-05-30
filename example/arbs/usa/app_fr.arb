@@ -1,9 +1,8 @@
 {
-  "@@locale": "fr",
-  "appName": "USA App",
-  "title": "Démonstration de la localisation Flutter",
-  "greeting": "Bonjour {name}, bienvenue!",
-  "hello_world": "Bonjour {name}, vous avez {count} articles dans {categories} catégories.",
-  "thankYou": "Merci d'utiliser notre application!",
-  "goodbyeMessage": "Au revoir! Passez une bonne journée!"
+  "appTitle": "USA App",
+  "hello": "Hello {name}!",
+  "welcomeMessage": "Welcome back, {username}!",
+  "simpleGreeting": "Good morning!",
+  "itemsInCart": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
+  "refresh": "Refresh Translations"
 }

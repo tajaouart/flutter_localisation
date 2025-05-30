@@ -9,24 +9,33 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Mexico App';
+  String get appTitle => 'USA App';
 
   @override
-  String get title => 'Flutter Localization Demo';
-
-  @override
-  String greeting(Object name) {
-    return 'Hello $name, welcome!';
+  String hello(Object name) {
+    return 'Hello $name!';
   }
 
   @override
-  String hello_world(Object name, Object count, Object categories) {
-    return 'Hello $name, you have $count items in $categories categories.';
+  String welcomeMessage(Object username) {
+    return 'Welcome back, $username!';
   }
 
   @override
-  String get thankYou => 'Thank you for using our app!';
+  String get simpleGreeting => 'Good morning!';
 
   @override
-  String get goodbyeMessage => 'Goodbye! Have a great day!';
+  String itemsInCart(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+      zero: 'No items',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get refresh => 'Refresh Translations';
 }

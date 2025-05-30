@@ -16,6 +16,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   google_fonts:
+  flutter_localisation:
+    path: ../
 
 dev_dependencies:
   flutter_test:
