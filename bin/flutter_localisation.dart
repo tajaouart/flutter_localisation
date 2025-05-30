@@ -9,13 +9,16 @@ Future<void> main(List<String> args) async {
 
   if (args.length < 2) {
     _logger.severe(
-      'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.',
+      'Usage: dart run flutter_localization <flavors-folder> <flavor-name> [--with-saas]\n'
+      'Both arguments are required.\n'
+      'Add --with-saas to also generate SaaS methods automatically.',
     );
     exit(1);
   }
 
   final flavorsFolder = args[0];
   final flavor = args[1];
+  final withSaas = args.contains('--with-saas');
   final l10nFile = File('l10n.yaml');
 
   _logger.info(
@@ -54,8 +57,70 @@ Future<void> main(List<String> args) async {
     }
 
     _logger.info('Localization generation completed successfully.');
+
+    // ✅ NOUVEAU: Si --with-saas, lancer generate.dart automatiquement
+    if (withSaas) {
+      _logger.info('🎯 Starting SaaS methods generation...');
+      await _runSaaSGeneration();
+    } else {
+      _logger.info(
+          '💡 Tip: Add --with-saas to also generate SaaS methods automatically');
+    }
   } catch (e) {
     _logger.severe('An error occurred: $e');
+    exit(1);
+  }
+}
+
+// ✅ NOUVEAU: Function pour lancer generate.dart
+Future<void> _runSaaSGeneration() async {
+  try {
+    // Essayer plusieurs emplacements possibles pour generate.dart
+    final possiblePaths = [
+      'bin/generate.dart',
+      '../bin/generate.dart',
+      'packages/flutter_localisation/bin/generate.dart',
+    ];
+
+    String? generateScript;
+    for (final path in possiblePaths) {
+      if (await File(path).exists()) {
+        generateScript = path;
+        break;
+      }
+    }
+
+    if (generateScript == null) {
+      _logger.warning(
+          '❌ SaaS generation script not found in any of these locations:');
+      for (final path in possiblePaths) {
+        _logger.warning('   - $path');
+      }
+      _logger.info(
+          '💡 Skipping SaaS method generation. Run "saas_generate" manually if needed.');
+      return;
+    }
+
+    _logger.info('📄 Found SaaS script: $generateScript');
+    _logger.info('🔧 Running: dart run $generateScript');
+
+    final result = await Process.run('dart', ['run', generateScript]);
+
+    _logger.info('📤 SaaS generation stdout: ${result.stdout}');
+    if (result.stderr.isNotEmpty) {
+      _logger.warning('📤 SaaS generation stderr: ${result.stderr}');
+    }
+
+    if (result.exitCode == 0) {
+      _logger.info('✅ SaaS methods generated successfully!');
+    } else {
+      _logger.severe(
+          '❌ SaaS generation failed with exit code: ${result.exitCode}');
+      _logger.severe('Error output: ${result.stderr}');
+      exit(1);
+    }
+  } catch (e) {
+    _logger.severe('💥 Exception during SaaS generation: $e');
     exit(1);
   }
 }

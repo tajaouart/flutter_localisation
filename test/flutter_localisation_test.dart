@@ -11,32 +11,97 @@ void main() {
   late String projectRoot;
   late String scriptPath;
 
+// ✅ AJOUTEZ cette fonction de sécurité après les imports :
+  void _ensureInTestDirectory(String pathToCheck, String testDirPath) {
+    if (!pathToCheck.contains('flutter_localisation_test_')) {
+      throw Exception('🚨 SÉCURITÉ: Tentative d\'opération sur un chemin non-test: $pathToCheck');
+    }
+    if (!pathToCheck.contains(testDirPath)) {
+      throw Exception('🚨 SÉCURITÉ: Chemin en dehors du dossier de test: $pathToCheck');
+    }
+  }
+
+// ✅ MODIFIEZ votre setUpAll() - remplacez la partie création testDir :
   setUpAll(() async {
     // Sauvegarder le répertoire du projet
     projectRoot = Directory.current.path;
     scriptPath = path.join(projectRoot, 'bin', 'flutter_localisation.dart');
+
+    // 🛡️ GARDE-FOU: Vérifier qu'on est dans le bon projet
+    if (!projectRoot.contains('flutter_localisation')) {
+      throw Exception('🚨 SÉCURITÉ: Test lancé depuis un mauvais répertoire: $projectRoot');
+    }
 
     // Vérifier que le script existe
     if (!await File(scriptPath).exists()) {
       throw Exception('Script not found: $scriptPath');
     }
 
-    // Créer un dossier temporaire unique pour tous les tests
+    // 🛡️ GARDE-FOU: Créer un dossier temporaire TRÈS spécifique
     final tempDir = Directory.systemTemp;
     final randomId = Random().nextInt(999999);
-    testDir = Directory(
-        path.join(tempDir.path, 'flutter_localisation_test_$randomId'));
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    testDir = Directory(path.join(
+        tempDir.path,
+        'SAFE_flutter_localisation_test_${randomId}_$timestamp'
+    ));
     await testDir.create(recursive: true);
 
-    print('🧪 Tests running in: ${testDir.path}');
+    // 🛡️ GARDE-FOU: Vérifier qu'on est bien dans un dossier temporaire
+    if (!testDir.path.contains(tempDir.path)) {
+      throw Exception('🚨 SÉCURITÉ: testDir n\'est pas dans le dossier temporaire!');
+    }
+    if (testDir.path.contains(projectRoot)) {
+      throw Exception('🚨 SÉCURITÉ: testDir est dans le projet! Danger!');
+    }
+
+    print('🛡️  SÉCURISÉ: Tests running in: ${testDir.path}');
     print('📄 Script path: $scriptPath');
   });
 
+// ✅ MODIFIEZ votre tearDown() - ajoutez les validations avant chaque delete :
+  tearDown(() async {
+    // 🛡️ GARDE-FOU: Nettoyer seulement les fichiers de test
+    if (await l10nFile.exists()) {
+      await _setReadOnly(l10nFile, false);
+      await l10nFile.delete();
+    }
+
+    // Nettoyer le pubspec.yaml de test
+    final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
+    if (await pubspecFile.exists()) {
+      await pubspecFile.delete();
+    }
+
+    // 🛡️ SÉCURISÉ: Nettoyer les scripts mock avec validation
+    final binDir = Directory(path.join(testDir.path, 'bin'));
+    if (await binDir.exists()) {
+      _ensureInTestDirectory(binDir.path, testDir.path); // ← AJOUTEZ cette ligne
+      await binDir.delete(recursive: true);
+    }
+
+    // 🛡️ SÉCURISÉ: Nettoyer le lib/ avec validation
+    final testLibDir = Directory(path.join(testDir.path, 'lib'));
+    if (await testLibDir.exists()) {
+      _ensureInTestDirectory(testLibDir.path, testDir.path); // ← AJOUTEZ cette ligne
+      await testLibDir.delete(recursive: true);
+    }
+  });
+
+// ✅ MODIFIEZ votre tearDownAll() - ajoutez la validation :
   tearDownAll(() async {
-    // ✅ SÉCURISÉ : Supprimer seulement le dossier temporaire
+    // 🛡️ GARDE-FOU: Double vérification avant suppression
     if (await testDir.exists()) {
+      // Vérifier qu'on supprime bien un dossier temporaire
+      if (!testDir.path.contains('SAFE_flutter_localisation_test_')) {
+        throw Exception('🚨 SÉCURITÉ: Tentative de suppression d\'un dossier non-test!');
+      }
+      if (testDir.path.contains(projectRoot)) {
+        throw Exception('🚨 SÉCURITÉ: Tentative de suppression dans le projet!');
+      }
+
       await testDir.delete(recursive: true);
-      print('🧹 Cleaned up test directory: ${testDir.path}');
+      print('🧹 SÉCURISÉ: Cleaned up test directory: ${testDir.path}');
     }
   });
 
@@ -72,19 +137,7 @@ synthetic-package: false
 ''');
   });
 
-  tearDown(() async {
-    // ✅ SÉCURISÉ : Nettoyer seulement les fichiers de test
-    if (await l10nFile.exists()) {
-      await _setReadOnly(l10nFile, false);
-      await l10nFile.delete();
-    }
 
-    // Nettoyer le lib/ dans le dossier de test seulement
-    final testLibDir = Directory(path.join(testDir.path, 'lib'));
-    if (await testLibDir.exists()) {
-      await testLibDir.delete(recursive: true);
-    }
-  });
 
   test('should update l10n.yaml with correct flavor', () async {
     final flavor = 'test_flavor';
@@ -113,6 +166,176 @@ synthetic-package: false
     expect(updatedContent.contains('arb-dir: lib/l10n/$flavor'), isTrue);
   });
 
+  // ✅ NOUVEAU: Test du message d'aide mis à jour
+  test('should show updated usage message with --with-saas flag', () async {
+    // Run the localization generator script without arguments
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath],
+      workingDirectory: testDir.path,
+    );
+
+    // Ensure the script exits with an error
+    expect(result.exitCode, isNot(0));
+
+    // Check if the updated error message was logged
+    final output = result.stdout + result.stderr;
+    expect(
+        output,
+        contains(
+            'Usage: dart run flutter_localization <flavors-folder> <flavor-name> [--with-saas]'));
+    expect(
+        output,
+        contains(
+            'Add --with-saas to also generate SaaS methods automatically.'));
+  });
+
+  // ✅ NOUVEAU: Test que le tip est affiché sans --with-saas
+  test('should show tip when --with-saas flag is not provided', () async {
+    final flavor = 'test_flavor';
+
+    // Create test setup
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+    await dir.create(recursive: true);
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+    // Run without --with-saas flag
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor],
+      workingDirectory: testDir.path,
+    );
+
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    expect(result.exitCode, 0, reason: result.stderr);
+
+    // Check that tip is shown
+    final output = result.stdout + result.stderr;
+    expect(
+        output,
+        contains(
+            '💡 Tip: Add --with-saas to also generate SaaS methods automatically'));
+  });
+
+  // ✅ NOUVEAU: Test avec --with-saas flag (pas de script generate.dart)
+  test('should handle missing generate.dart script gracefully with --with-saas',
+      () async {
+    final flavor = 'test_flavor';
+
+    // Create test setup
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+    await dir.create(recursive: true);
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+    // Run with --with-saas flag (but no generate.dart exists)
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor, '--with-saas'],
+      workingDirectory: testDir.path,
+    );
+
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    expect(result.exitCode, 0,
+        reason: 'Should complete successfully even without generate.dart');
+
+    // Check SaaS generation was attempted but skipped
+    final output = result.stdout + result.stderr;
+    expect(output, contains('🎯 Starting SaaS methods generation...'));
+    expect(
+        output,
+        contains(
+            '❌ SaaS generation script not found in any of these locations:'));
+    expect(
+        output,
+        contains(
+            '💡 Skipping SaaS method generation. Run "saas_generate" manually if needed.'));
+  });
+
+  // ✅ NOUVEAU: Test avec un mock generate.dart script
+  test(
+      'should run SaaS generation successfully with --with-saas when script exists',
+      () async {
+    final flavor = 'test_flavor';
+
+    // Create test setup
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+    await dir.create(recursive: true);
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+    // Create mock generate.dart script in bin/
+    final binDir = Directory(path.join(testDir.path, 'bin'));
+    await binDir.create(recursive: true);
+    final mockGenerateScript = File(path.join(binDir.path, 'generate.dart'));
+    await mockGenerateScript.writeAsString('''
+#!/usr/bin/env dart
+void main() {
+  print('🚀 SaaS Translations Generator');
+  print('✅ Generation completed successfully!');
+}
+''');
+
+    // Run with --with-saas flag
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor, '--with-saas'],
+      workingDirectory: testDir.path,
+    );
+
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    expect(result.exitCode, 0, reason: result.stderr);
+
+    // Check SaaS generation was executed
+    final output = result.stdout + result.stderr;
+    expect(output, contains('🎯 Starting SaaS methods generation...'));
+    expect(output, contains('📄 Found SaaS script: bin/generate.dart'));
+    expect(output, contains('🔧 Running: dart run bin/generate.dart'));
+    expect(output, contains('✅ SaaS methods generated successfully!'));
+  });
+
+  // ✅ NOUVEAU: Test gestion d'erreur du script SaaS
+  test('should handle SaaS generation script failure gracefully', () async {
+    final flavor = 'test_flavor';
+
+    // Create test setup
+    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+    await dir.create(recursive: true);
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+    // Create failing mock generate.dart script
+    final binDir = Directory(path.join(testDir.path, 'bin'));
+    await binDir.create(recursive: true);
+    final mockGenerateScript = File(path.join(binDir.path, 'generate.dart'));
+    await mockGenerateScript.writeAsString('''
+#!/usr/bin/env dart
+import 'dart:io';
+void main() {
+  print('Starting SaaS generation...');
+  stderr.write('Error: Something went wrong!');
+  exit(1);
+}
+''');
+
+    // Run with --with-saas flag
+    final result = await Process.run(
+      'dart',
+      ['run', scriptPath, 'lib/l10n', flavor, '--with-saas'],
+      workingDirectory: testDir.path,
+    );
+
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    expect(result.exitCode, 1,
+        reason: 'Should fail when SaaS generation fails');
+
+    // Check error handling
+    final output = result.stdout + result.stderr;
+    expect(output, contains('🎯 Starting SaaS methods generation...'));
+    expect(output, contains('❌ SaaS generation failed with exit code: 1'));
+  });
+
   test('should log an error if no flavor is provided', () async {
     // Run the localization generator script without arguments
     final result = await Process.run(
@@ -129,7 +352,7 @@ synthetic-package: false
     expect(
       output,
       contains(
-        'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.',
+        'Usage: dart run flutter_localization <flavors-folder> <flavor-name> [--with-saas]',
       ),
     );
   });
@@ -219,30 +442,6 @@ synthetic-package: false
     // Verify updated l10n.yaml content
     final updatedContent = await l10nFile.readAsString();
     expect(updatedContent, contains('arb-dir: lib/l10n/$flavor'));
-  });
-
-  test('Logs error if no flavor is provided', () async {
-    // Run the script without arguments
-    final result = await Process.run(
-      'dart',
-      ['run', scriptPath],
-      workingDirectory: testDir.path,
-    );
-
-    // Debug outputs
-    print('stdout: ${result.stdout}');
-    print('stderr: ${result.stderr}');
-    print('Exit Code: ${result.exitCode}');
-
-    // Verify error status and message
-    expect(result.exitCode, isNot(0));
-    final output = result.stdout + result.stderr;
-    expect(
-      output,
-      contains(
-        'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\nBoth arguments are required.',
-      ),
-    );
   });
 
   test('Handles invalid flavor folder gracefully', () async {
@@ -424,6 +623,26 @@ synthetic-package: false
       generatedDir =
           Directory(path.join(testDir.path, 'lib/localization/generated'));
 
+      // ✅ AJOUT : Créer pubspec.yaml pour le groupe End-to-End aussi
+      final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
+      await pubspecFile.writeAsString('''
+name: test_project
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+flutter:
+  generate: true  # ✅ IMPORTANT pour flutter gen-l10n
+''');
+
       // Write ARB files (English and Spanish)
       await arbEnFile.writeAsString('''
 {
@@ -456,6 +675,18 @@ synthetic-package: false
 
       if (await groupL10nFile.exists()) {
         await groupL10nFile.delete();
+      }
+
+      // Nettoyer le pubspec.yaml du groupe End-to-End
+      final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
+      if (await pubspecFile.exists()) {
+        await pubspecFile.delete();
+      }
+
+      // ✅ NOUVEAU: Nettoyer les scripts mock du groupe End-to-End aussi
+      final binDir = Directory(path.join(testDir.path, 'bin'));
+      if (await binDir.exists()) {
+        await binDir.delete(recursive: true);
       }
     });
 
@@ -507,6 +738,99 @@ synthetic-package: false
         reason:
             'Expected English translation to be included in the generated file.',
       );
+    });
+  });
+
+  // ✅ NOUVEAU: Tests spécifiques pour la fonctionnalité SaaS
+  group('SaaS Integration Tests', () {
+    test('should detect --with-saas flag correctly', () async {
+      final flavor = 'test_flavor';
+
+      // Create test setup
+      final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+      await dir.create(recursive: true);
+      await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+      // ✅ Assurer qu'aucun script mock n'existe
+      final binDir = Directory(path.join(testDir.path, 'bin'));
+      if (await binDir.exists()) {
+        await binDir.delete(recursive: true);
+      }
+
+      // Test avec flag --with-saas (sans script = should skip gracefully)
+      final result = await Process.run(
+        'dart',
+        ['run', scriptPath, 'lib/l10n', flavor, '--with-saas'],
+        workingDirectory: testDir.path,
+      );
+
+      final output = result.stdout + result.stderr;
+      expect(output, contains('🎯 Starting SaaS methods generation...'),
+          reason: 'Should start SaaS generation when flag is present');
+
+      // Test que la génération SaaS est tentée mais skippée
+      expect(output, contains('💡 Skipping SaaS method generation'),
+          reason: 'Should skip SaaS generation when script is not found');
+    });
+
+    test('should work with working SaaS script', () async {
+      final flavor = 'test_flavor';
+
+      // Create test setup
+      final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+      await dir.create(recursive: true);
+      await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+      // ✅ Create working mock generate.dart script
+      final binDir = Directory(path.join(testDir.path, 'bin'));
+      await binDir.create(recursive: true);
+      final mockGenerateScript = File(path.join(binDir.path, 'generate.dart'));
+      await mockGenerateScript.writeAsString('''
+#!/usr/bin/env dart
+void main() {
+  print('🚀 SaaS Translations Generator');
+  print('✅ Generation completed successfully!');
+}
+''');
+
+      // Test with --with-saas flag
+      final result = await Process.run(
+        'dart',
+        ['run', scriptPath, 'lib/l10n', flavor, '--with-saas'],
+        workingDirectory: testDir.path,
+      );
+
+      expect(result.exitCode, 0,
+          reason: 'Should complete successfully with working script');
+
+      final output = result.stdout + result.stderr;
+      expect(output, contains('🎯 Starting SaaS methods generation...'));
+      expect(output, contains('✅ SaaS methods generated successfully!'));
+    });
+
+    test('should ignore unknown flags gracefully', () async {
+      final flavor = 'test_flavor';
+
+      // Create test setup
+      final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+      await dir.create(recursive: true);
+      await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
+
+      // Test with unknown flag - should still work but not trigger SaaS
+      final result = await Process.run(
+        'dart',
+        ['run', scriptPath, 'lib/l10n', flavor, '--unknown-flag'],
+        workingDirectory: testDir.path,
+      );
+
+      expect(result.exitCode, 0, reason: 'Should ignore unknown flags');
+
+      final output = result.stdout + result.stderr;
+      expect(
+          output,
+          contains(
+              '💡 Tip: Add --with-saas to also generate SaaS methods automatically'),
+          reason: 'Should show tip when --with-saas is not present');
     });
   });
 }
