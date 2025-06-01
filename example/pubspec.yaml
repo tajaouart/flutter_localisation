@@ -18,6 +18,8 @@ dependencies:
   google_fonts:
   flutter_localisation:
     path: ../
+  shared_preferences:
+  http:
 
 dev_dependencies:
   flutter_test:

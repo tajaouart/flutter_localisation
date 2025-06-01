@@ -5,8 +5,7 @@ import 'icu_message_processor.dart';
 import 'service.dart';
 
 /// Provider that makes SaaS translations available throughout the widget tree
-class SaaSTranslationProvider
-    extends InheritedNotifier<SaaSTranslationService> {
+class SaaSTranslationProvider extends InheritedWidget {
   final SaaSTranslationService service;
   final dynamic generatedLocalizations;
 
@@ -15,7 +14,7 @@ class SaaSTranslationProvider
     required this.service,
     required this.generatedLocalizations,
     required super.child,
-  }) : super(notifier: service);
+  });
 
   /// Get the SaaS translation instance from context
   static SaaSTranslationProvider of(BuildContext context) {
@@ -51,6 +50,14 @@ extension SaaSTranslationExtension on BuildContext {
       service: provider.service,
       generatedLocalizations: provider.generatedLocalizations,
     );
+  }
+}
+
+/// Extension for easy access to the service itself
+extension SaaSTranslationServiceExtension on BuildContext {
+  /// Access the SaaS translation service directly
+  SaaSTranslationService? get saasTranslations {
+    return SaaSTranslationProvider.maybeOf(this)?.service;
   }
 }
 
@@ -122,9 +129,9 @@ class SaaSTranslations {
   }
 
   /// Convenience method to refresh translations
-  Future<void> refreshArbFiles() async {
+  Future<void> refreshTranslations() async {
     final locale = Localizations.localeOf(context);
-    await service.fetchUpdates(locale.languageCode);
+    await service.refreshTranslations(locale.languageCode);
   }
 
   /// Get cache status for debugging

@@ -1,15 +1,25 @@
 // lib/src/config.dart
+import 'package:flutter/foundation.dart';
 
-/// Configuration for SaaS Translation Service
+/// Configuration for SaaS translation service behavior
 class SaaSTranslationConfig {
+  /// Enable console logging for debugging
+  final bool enableLogging;
+
   /// Timeout for API calls
   final Duration apiTimeout;
 
-  /// Enable debug logging
-  final bool enableLogging;
-
-  /// Throw exceptions on API errors (vs silent fail)
+  /// Whether to throw errors or fail silently
   final bool throwOnError;
+
+  /// Base URL for translation API
+  final String apiBaseUrl;
+
+  /// API key for authenticated requests (null for free tier)
+  final String? apiKey;
+
+  /// Supported locales to check for updates
+  final List<String>? supportedLocales;
 
   /// Path to generated app_localizations.dart (auto-detected if null)
   final String? localizationsPath;
@@ -18,17 +28,23 @@ class SaaSTranslationConfig {
   final String? outputPath;
 
   const SaaSTranslationConfig({
+    this.enableLogging = false,
     this.apiTimeout = const Duration(seconds: 5),
-    this.enableLogging = true,
     this.throwOnError = false,
+    this.apiBaseUrl = 'https://api.yoursaas.com',
+    this.apiKey,
+    this.supportedLocales,
     this.localizationsPath,
     this.outputPath,
   });
 
-  /// Create config with custom API integration
+  /// Create config for production environment
   const SaaSTranslationConfig.production({
-    this.apiTimeout = const Duration(seconds: 10),
+    required this.apiBaseUrl,
+    required this.apiKey,
+    this.supportedLocales,
     this.enableLogging = false,
+    this.apiTimeout = const Duration(seconds: 10),
     this.throwOnError = true,
     this.localizationsPath,
     this.outputPath,
@@ -36,9 +52,12 @@ class SaaSTranslationConfig {
 
   /// Create config for development/demo
   const SaaSTranslationConfig.development({
-    this.apiTimeout = const Duration(seconds: 2),
+    this.apiBaseUrl = 'https://dev-api.yoursaas.com',
+    this.apiKey,
+    this.supportedLocales,
     this.enableLogging = true,
-    this.throwOnError = false,
+    this.apiTimeout = const Duration(seconds: 10),
+    this.throwOnError = kDebugMode,
     this.localizationsPath,
     this.outputPath,
   });

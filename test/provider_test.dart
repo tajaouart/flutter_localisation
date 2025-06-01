@@ -22,19 +22,26 @@ class MockAppLocalizations {
 // Test SaaS service that can be controlled for testing
 class TestSaaSTranslationService extends SaaSTranslationService {
   final Map<String, Map<String, String>> _testOverrides = {};
+  bool _testCacheLoaded = false;
 
   void setTestOverrides(String locale, Map<String, String> overrides) {
     _testOverrides[locale] = overrides;
-    notifyListeners(); // Notify listeners of changes
+    _testCacheLoaded = true; // Mark cache as loaded when setting overrides
+  }
+
+  void setCacheLoaded(bool loaded) {
+    _testCacheLoaded = loaded;
   }
 
   @override
   String? getOverride(String locale, String key) {
+    if (!_testCacheLoaded) return null; // Simulate cache not loaded
     return _testOverrides[locale]?[key];
   }
 
   @override
   bool hasOverride(String locale, String key) {
+    if (!_testCacheLoaded) return false;
     return _testOverrides[locale]?.containsKey(key) ?? false;
   }
 
@@ -43,6 +50,8 @@ class TestSaaSTranslationService extends SaaSTranslationService {
     return _testOverrides
         .map((locale, overrides) => MapEntry(locale, overrides.length));
   }
+
+  bool get isCacheLoaded => _testCacheLoaded;
 }
 
 void main() {
@@ -98,6 +107,112 @@ void main() {
       expect(translations, isA<SaaSTranslations>());
       expect(translations.service, equals(service));
       expect(translations.generatedLocalizations, equals(mockLocalizations));
+    });
+
+    group('Cache Loading Behavior Tests', () {
+      testWidgets('returns null when cache not loaded', (tester) async {
+        service.setCacheLoaded(false); // Simulate cache not loaded
+
+        String? result;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: MockAppLocalizations.supportedLocales,
+            home: SaaSTranslationProvider(
+              service: service,
+              generatedLocalizations: mockLocalizations,
+              child: Builder(
+                builder: (context) {
+                  // Even with override set, should return null when cache not loaded
+                  service._testOverrides['en'] = {
+                    'hello': 'SaaS Hello {name}!'
+                  };
+                  result = service.getOverride('en', 'hello');
+                  return Container();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(result, isNull);
+      });
+
+      testWidgets('uses bundled translations when cache not loaded',
+          (tester) async {
+        service.setCacheLoaded(false); // Simulate cache not loaded
+        service._testOverrides['en'] = {'hello': 'SaaS Hello {name}!'};
+
+        String? result;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: MockAppLocalizations.supportedLocales,
+            home: SaaSTranslationProvider(
+              service: service,
+              generatedLocalizations: mockLocalizations,
+              child: Builder(
+                builder: (context) {
+                  result = context.tr.translate(
+                    'hello',
+                    {'name': 'World'},
+                    () => mockLocalizations.hello('World'),
+                  );
+                  return Container();
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Should use bundled translation since cache not loaded
+        expect(result, equals('Hello World!'));
+      });
+
+      testWidgets('uses SaaS translations when cache loaded', (tester) async {
+        service.setCacheLoaded(true); // Cache is loaded
+        service.setTestOverrides('en', {'hello': 'SaaS Hello {name}!'});
+
+        String? result;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: MockAppLocalizations.supportedLocales,
+            home: SaaSTranslationProvider(
+              service: service,
+              generatedLocalizations: mockLocalizations,
+              child: Builder(
+                builder: (context) {
+                  result = context.tr.translate(
+                    'hello',
+                    {'name': 'World'},
+                    () => mockLocalizations.hello('World'),
+                  );
+                  return Container();
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Should use SaaS translation since cache is loaded
+        expect(result, equals('SaaS Hello World!'));
+      });
     });
 
     group('ICU Plural Processing Tests', () {
@@ -286,15 +401,6 @@ void main() {
         expect(service.getOverride('es', 'greeting'), equals('Hola'));
       });
 
-      test('service notifies listeners on updates', () {
-        bool notified = false;
-        service.addListener(() => notified = true);
-
-        service.setTestOverrides('en', {'test': 'value'});
-
-        expect(notified, isTrue);
-      });
-
       test('service cache status reflects overrides', () {
         service.setTestOverrides('en', {'key1': 'value1', 'key2': 'value2'});
         service.setTestOverrides('es', {'key1': 'valor1'});
@@ -302,6 +408,20 @@ void main() {
         final status = service.getCacheStatus();
         expect(status['en'], equals(2));
         expect(status['es'], equals(1));
+      });
+
+      test('cache loaded flag controls override availability', () {
+        service._testOverrides['en'] = {'test': 'value'};
+
+        // Cache not loaded
+        service.setCacheLoaded(false);
+        expect(service.getOverride('en', 'test'), isNull);
+        expect(service.hasOverride('en', 'test'), isFalse);
+
+        // Cache loaded
+        service.setCacheLoaded(true);
+        expect(service.getOverride('en', 'test'), equals('value'));
+        expect(service.hasOverride('en', 'test'), isTrue);
       });
     });
   });
