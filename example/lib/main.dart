@@ -8,9 +8,11 @@ import 'localization/generated/app_localizations.dart';
 final _saasService = SaaSTranslationService(
   config: const SaaSTranslationConfig(
     enableLogging: true,
-    apiBaseUrl: 'https://api.yoursaas.com',
-    apiKey: null, // Add your API key for paid features
+    apiBaseUrl: 'http://localhost:8000',
+    secretKey: "sk_live_Z095M95SsXi-LqI39vduaa9Vhc-Zjug8oXjnST-DGNs",
     supportedLocales: ['en', 'es'],
+    projectId: 31,
+    flavorName: 'Default',
   ),
 );
 

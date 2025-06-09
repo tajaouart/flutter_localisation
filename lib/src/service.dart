@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config.dart';
@@ -13,16 +14,18 @@ class SaaSTranslationService {
   final SaaSTranslationConfig _config;
 
   // Version tracking
-  final Map<String, String> _localVersions = {};
+  final Map<String, int> _localVersions = {};
   late SharedPreferences _prefs;
   bool _initialized = false;
 
-  // Mock version for demo
-  static const String _mockServerVersion = '1.0.1';
+  // HTTP client for API calls
+  final http.Client _httpClient;
 
   SaaSTranslationService({
     SaaSTranslationConfig? config,
-  }) : _config = config ?? SaaSTranslationConfig();
+    http.Client? httpClient,
+  })  : _config = config ?? const SaaSTranslationConfig(),
+        _httpClient = httpClient ?? http.Client();
 
   /// Initialize service - call this once at app start
   Future<void> initialize() async {
@@ -37,16 +40,29 @@ class SaaSTranslationService {
 
     _initialized = true;
 
-    // Check for updates in background (NON-BLOCKING - happens after app starts)
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _checkForUpdatesAllLocales();
-    });
+    // Only check for updates if we have API credentials (paid users)
+    if (_config.secretKey != null &&
+        _config.projectId != null &&
+        _config.flavorName != null) {
+      // Check for updates in background (NON-BLOCKING - happens after app starts)
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _checkForUpdatesAllLocales();
+      });
+    } else {
+      _log('No API credentials configured - running in offline mode');
+    }
 
     _log('Service initialized');
   }
 
   /// Check if service is ready with cached data
   bool get isReady => _initialized && _memoryCache.isNotEmpty;
+
+  /// Check if API is configured (for paid users)
+  bool get isApiConfigured =>
+      _config.secretKey != null &&
+      _config.projectId != null &&
+      _config.flavorName != null;
 
   /// Get override translation for a specific key
   /// This is INSTANT - reads from memory cache, no async needed
@@ -62,6 +78,10 @@ class SaaSTranslationService {
 
   /// Force refresh translations for a locale
   Future<void> refreshTranslations(String locale) async {
+    if (!isApiConfigured) {
+      _log('Cannot refresh - API not configured');
+      return;
+    }
     await _checkAndFetchUpdates(locale, forceRefresh: true);
   }
 
@@ -90,13 +110,13 @@ class SaaSTranslationService {
 
     for (final locale in locales) {
       final cached = _prefs.getString('saas_trans_$locale');
-      final version = _prefs.getString('saas_version_$locale');
+      final version = _prefs.getInt('saas_version_$locale');
 
       if (cached != null) {
         try {
           final translations = Map<String, String>.from(jsonDecode(cached));
           _memoryCache[locale] = translations;
-          _localVersions[locale] = version ?? '0';
+          _localVersions[locale] = version ?? 0;
           _log('Loaded ${translations.length} cached translations for $locale');
         } catch (e) {
           _log('Error loading cached translations for $locale: $e');
@@ -123,6 +143,8 @@ class SaaSTranslationService {
     String locale, {
     bool forceRefresh = false,
   }) async {
+    if (!isApiConfigured) return;
+
     if (_loadingStates[locale] == true && !forceRefresh) {
       return;
     }
@@ -130,29 +152,49 @@ class SaaSTranslationService {
     _loadingStates[locale] = true;
 
     try {
-      // First, check if update needed (lightweight HEAD request)
-      final currentVersion = _localVersions[locale] ?? '0';
-      final shouldUpdate =
-          forceRefresh || await _checkVersionUpdate(locale, currentVersion);
+      final currentVersion = _localVersions[locale] ?? 0;
 
-      if (!shouldUpdate) {
+      // Make API call to check for updates
+      final updateData = await _fetchTranslationUpdates(locale, currentVersion);
+
+      if (updateData == null || !updateData['has_updates']) {
         _log('No updates available for $locale');
         return;
       }
 
-      // Fetch updates (delta or full based on API tier)
-      final updates = await _fetchTranslationUpdates(locale, currentVersion);
+      // Extract translations based on locale
+      final allTranslations =
+          updateData['translations'] as Map<String, dynamic>?;
+      if (allTranslations == null) {
+        _log('No translations in response');
+        return;
+      }
 
-      if (updates.isEmpty) return;
+      // Get translations for the specific locale
+      final localeTranslations =
+          allTranslations[locale] as Map<String, dynamic>?;
+      if (localeTranslations == null) {
+        _log('No translations for locale $locale');
+        return;
+      }
+
+      // Convert to Map<String, String>
+      final translations = localeTranslations.map(
+        (key, value) => MapEntry(key, value.toString()),
+      );
 
       // Update memory cache
-      _memoryCache[locale] = updates['translations'] as Map<String, String>;
-      _localVersions[locale] = updates['version'] as String;
+      _memoryCache[locale] = translations;
+      _localVersions[locale] = updateData['version'] as int;
 
       // Persist to storage
-      await _persistTranslations(locale, updates);
+      await _persistTranslations(locale, {
+        'translations': translations,
+        'version': updateData['version'],
+      });
 
-      _log('Updated ${_memoryCache[locale]!.length} translations for $locale');
+      _log(
+          'Updated ${translations.length} translations for $locale to version ${updateData['version']}');
     } catch (e) {
       _log('Error updating translations for $locale: $e');
       if (_config.throwOnError && forceRefresh) rethrow;
@@ -161,134 +203,50 @@ class SaaSTranslationService {
     }
   }
 
-  Future<bool> _checkVersionUpdate(String locale, String currentVersion) async {
-    // MOCK: Simulate API delay and version check
-    await Future.delayed(const Duration(milliseconds: 300));
-    _log(
-        '[MOCK] Version check for $locale: current=$currentVersion, server=$_mockServerVersion');
-    return currentVersion != _mockServerVersion;
+  Future<Map<String, dynamic>?> _fetchTranslationUpdates(
+      String locale, int currentVersion) async {
+    if (!isApiConfigured) return null;
 
-    // REAL API CODE (commented out for mock)
-    /*
     try {
       final uri =
-          Uri.parse('${_config.apiBaseUrl}/translations/$locale/version');
-      final response = await http
-          .head(
+          Uri.parse('${_config.apiBaseUrl}/api/v1/translations/live-update/');
+
+      final response = await _httpClient
+          .post(
             uri,
-            headers: _buildHeaders(),
-          )
-          .timeout(_config.apiTimeout);
-
-      if (response.statusCode == 200) {
-        final serverVersion = response.headers['x-version'] ?? '0';
-        return serverVersion != currentVersion;
-      }
-
-      return false;
-    } catch (e) {
-      _log('Version check failed for $locale: $e');
-      return false;
-    }
-    */
-  }
-
-  Future<Map<String, dynamic>> _fetchTranslationUpdates(
-      String locale, String currentVersion) async {
-    // MOCK: Return mock data based on locale
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    Map<String, String> mockTranslations;
-
-    if (locale == 'en') {
-      mockTranslations = {
-        'appTitle': '🇺🇸 USA App',
-        'hello': '🇺🇸 Hello {name}!',
-        'welcomeMessage': '🇺🇸 Welcome back, {username}!',
-        'simpleGreeting': '🇺🇸 Good morning!',
-        'itemsInCart':
-            '{count, plural, =0{ 🇺🇸 No items} =1{🇺🇸 1 item} other{🇺🇸 {count} items}}',
-        'refreshButton': 'Refresh Translations',
-      };
-    } else if (locale == 'es') {
-      mockTranslations = {
-        'appTitle': '🇪🇸 Aplicación España',
-        'hello': '🇪🇸 ¡Hola {name}!',
-        'welcomeMessage': '🇪🇸 ¡Bienvenido de nuevo, {username}!',
-        'simpleGreeting': '🇪🇸 ¡Buenos días!',
-        'itemsInCart':
-            '{count, plural, =0{🇪🇸 Sin artículos} =1{🇪🇸 1 artículo} other{🇪🇸 {count} artículos}}',
-        'refreshButton': '🇪🇸 Actualizar Traducciones',
-      };
-    } else {
-      mockTranslations = {};
-    }
-
-    _log('[MOCK] Fetched ${mockTranslations.length} translations for $locale');
-
-    return {
-      'translations': mockTranslations,
-      'version': _mockServerVersion,
-    };
-
-    // REAL API CODE (commented out for mock)
-    /*
-    try {
-      // Determine endpoint based on API tier
-      final endpoint = _config.apiKey != null && currentVersion != '0'
-          ? '/translations/$locale/delta?from=$currentVersion'
-          : '/translations/$locale/full';
-
-      final uri = Uri.parse('${_config.apiBaseUrl}$endpoint');
-      final response = await http
-          .get(
-            uri,
-            headers: _buildHeaders(),
+            headers: {
+              'Authorization': 'Bearer ${_config.secretKey}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'project_id': _config.projectId,
+              'flavor': _config.flavorName,
+              'current_version': currentVersion,
+            }),
           )
           .timeout(_config.apiTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
-        // Handle delta updates
-        if (endpoint.contains('delta')) {
-          final existing = Map<String, String>.from(_memoryCache[locale] ?? {});
-          final updates = Map<String, String>.from(data['updates'] ?? {});
-          final deletions = List<String>.from(data['deletions'] ?? []);
-
-          // Apply updates
-          existing.addAll(updates);
-
-          // Remove deletions
-          for (final key in deletions) {
-            existing.remove(key);
-          }
-
-          return {
-            'translations': existing,
-            'version': data['version'] ?? currentVersion,
-          };
-        }
-
-        // Full replacement
-        return {
-          'translations': Map<String, String>.from(data['translations'] ?? {}),
-          'version': data['version'] ?? currentVersion,
-        };
+        return data;
       }
 
-      // Handle rate limiting
-      if (response.statusCode == 429) {
-        _log('Rate limit exceeded for $locale');
-        // Could implement exponential backoff here
+      // Handle specific error cases
+      if (response.statusCode == 401) {
+        _log('Authentication failed - check your API key');
+      } else if (response.statusCode == 404) {
+        _log('Project or flavor not found');
+      } else if (response.statusCode == 429) {
+        _log('Rate limit exceeded');
+      } else if (response.statusCode == 500) {
+        _log('Server error: ${response.body}');
       }
 
-      return {};
+      return null;
     } catch (e) {
-      _log('Failed to fetch translations for $locale: $e');
-      return {};
+      _log('Failed to fetch translations: $e');
+      return null;
     }
-    */
   }
 
   Future<void> _persistTranslations(
@@ -298,7 +256,7 @@ class SaaSTranslationService {
     try {
       await _prefs.setString(
           'saas_trans_$locale', jsonEncode(data['translations']));
-      await _prefs.setString('saas_version_$locale', data['version'] as String);
+      await _prefs.setInt('saas_version_$locale', data['version'] as int);
       await _prefs.setString(
           'saas_last_update_$locale', DateTime.now().toIso8601String());
     } catch (e) {
@@ -306,25 +264,14 @@ class SaaSTranslationService {
     }
   }
 
-  Map<String, String> _buildHeaders() {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
-
-    if (_config.apiKey != null) {
-      headers['Authorization'] = 'Bearer ${_config.apiKey}';
-    }
-
-    // Add client info for analytics
-    headers['X-Client-Version'] = '1.0.0';
-    headers['X-Platform'] = defaultTargetPlatform.toString();
-
-    return headers;
-  }
-
   void _log(String message) {
     if (_config.enableLogging) {
       debugPrint('[SaaSTranslations] $message');
     }
+  }
+
+  /// Dispose of resources
+  void dispose() {
+    _httpClient.close();
   }
 }

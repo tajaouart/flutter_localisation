@@ -1,64 +1,80 @@
-// lib/src/config.dart
-import 'package:flutter/foundation.dart';
-
 /// Configuration for SaaS translation service behavior
 class SaaSTranslationConfig {
-  /// Enable console logging for debugging
-  final bool enableLogging;
+  /// The flavor name (e.g., 'default', 'premium')
+  final String? flavorName;
+
+  /// The API key for authentication (e.g., 'sk_live_xxxxx')
+  final String? secretKey;
+
+  /// The project ID from your Django backend
+  final int? projectId;
+
+  /// Base URL for the API (defaults to localhost for development)
+  final String apiBaseUrl;
 
   /// Timeout for API calls
   final Duration apiTimeout;
 
-  /// Whether to throw errors or fail silently
-  final bool throwOnError;
-
-  /// Base URL for translation API
-  final String apiBaseUrl;
-
-  /// API key for authenticated requests (null for free tier)
-  final String? apiKey;
-
   /// Supported locales to check for updates
   final List<String>? supportedLocales;
 
-  /// Path to generated app_localizations.dart (auto-detected if null)
-  final String? localizationsPath;
+  /// Whether to enable debug logging
+  final bool enableLogging;
 
-  /// Path where generated methods should be written (auto-detected if null)
-  final String? outputPath;
+  /// Whether to throw errors or fail silently
+  final bool throwOnError;
+
+  /// How often to check for updates in the background (null = disabled)
+  final Duration? backgroundCheckInterval;
 
   const SaaSTranslationConfig({
-    this.enableLogging = false,
-    this.apiTimeout = const Duration(seconds: 5),
-    this.throwOnError = false,
-    this.apiBaseUrl = 'https://api.yoursaas.com',
-    this.apiKey,
-    this.supportedLocales,
-    this.localizationsPath,
-    this.outputPath,
-  });
-
-  /// Create config for production environment
-  const SaaSTranslationConfig.production({
-    required this.apiBaseUrl,
-    required this.apiKey,
-    this.supportedLocales,
-    this.enableLogging = false,
+    this.secretKey,
+    this.flavorName,
+    this.projectId,
+    this.apiBaseUrl = 'http://localhost:8000', // Change to your production URL
     this.apiTimeout = const Duration(seconds: 10),
-    this.throwOnError = true,
-    this.localizationsPath,
-    this.outputPath,
-  });
-
-  /// Create config for development/demo
-  const SaaSTranslationConfig.development({
-    this.apiBaseUrl = 'https://dev-api.yoursaas.com',
-    this.apiKey,
     this.supportedLocales,
     this.enableLogging = true,
-    this.apiTimeout = const Duration(seconds: 10),
-    this.throwOnError = kDebugMode,
-    this.localizationsPath,
-    this.outputPath,
+    this.throwOnError = false,
+    this.backgroundCheckInterval,
   });
+
+  /// Factory constructor for free users (no API access)
+  factory SaaSTranslationConfig.freeUser({
+    List<String>? supportedLocales,
+    bool enableLogging = false,
+  }) {
+    return SaaSTranslationConfig(
+      secretKey: null,
+      flavorName: null,
+      projectId: null,
+      supportedLocales: supportedLocales,
+      enableLogging: enableLogging,
+    );
+  }
+
+  /// Factory constructor for paid users with API access
+  factory SaaSTranslationConfig.paidUser({
+    required String secretKey,
+    required String flavorName,
+    required int projectId,
+    String apiBaseUrl = 'http://localhost:8000',
+    Duration apiTimeout = const Duration(seconds: 10),
+    List<String>? supportedLocales,
+    bool enableLogging = true,
+    bool throwOnError = false,
+    Duration? backgroundCheckInterval,
+  }) {
+    return SaaSTranslationConfig(
+      secretKey: secretKey,
+      flavorName: flavorName,
+      projectId: projectId,
+      apiBaseUrl: apiBaseUrl,
+      apiTimeout: apiTimeout,
+      supportedLocales: supportedLocales,
+      enableLogging: enableLogging,
+      throwOnError: throwOnError,
+      backgroundCheckInterval: backgroundCheckInterval,
+    );
+  }
 }
