@@ -14,10 +14,12 @@ void main() {
 // ✅ AJOUTEZ cette fonction de sécurité après les imports :
   void _ensureInTestDirectory(String pathToCheck, String testDirPath) {
     if (!pathToCheck.contains('flutter_localisation_test_')) {
-      throw Exception('🚨 SÉCURITÉ: Tentative d\'opération sur un chemin non-test: $pathToCheck');
+      throw Exception(
+          '🚨 SÉCURITÉ: Tentative d\'opération sur un chemin non-test: $pathToCheck');
     }
     if (!pathToCheck.contains(testDirPath)) {
-      throw Exception('🚨 SÉCURITÉ: Chemin en dehors du dossier de test: $pathToCheck');
+      throw Exception(
+          '🚨 SÉCURITÉ: Chemin en dehors du dossier de test: $pathToCheck');
     }
   }
 
@@ -29,7 +31,8 @@ void main() {
 
     // 🛡️ GARDE-FOU: Vérifier qu'on est dans le bon projet
     if (!projectRoot.contains('flutter_localisation')) {
-      throw Exception('🚨 SÉCURITÉ: Test lancé depuis un mauvais répertoire: $projectRoot');
+      throw Exception(
+          '🚨 SÉCURITÉ: Test lancé depuis un mauvais répertoire: $projectRoot');
     }
 
     // Vérifier que le script existe
@@ -42,14 +45,13 @@ void main() {
     final randomId = Random().nextInt(999999);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     testDir = Directory(path.join(
-        tempDir.path,
-        'SAFE_flutter_localisation_test_${randomId}_$timestamp'
-    ));
+        tempDir.path, 'SAFE_flutter_localisation_test_${randomId}_$timestamp'));
     await testDir.create(recursive: true);
 
     // 🛡️ GARDE-FOU: Vérifier qu'on est bien dans un dossier temporaire
     if (!testDir.path.contains(tempDir.path)) {
-      throw Exception('🚨 SÉCURITÉ: testDir n\'est pas dans le dossier temporaire!');
+      throw Exception(
+          '🚨 SÉCURITÉ: testDir n\'est pas dans le dossier temporaire!');
     }
     if (testDir.path.contains(projectRoot)) {
       throw Exception('🚨 SÉCURITÉ: testDir est dans le projet! Danger!');
@@ -76,14 +78,16 @@ void main() {
     // 🛡️ SÉCURISÉ: Nettoyer les scripts mock avec validation
     final binDir = Directory(path.join(testDir.path, 'bin'));
     if (await binDir.exists()) {
-      _ensureInTestDirectory(binDir.path, testDir.path); // ← AJOUTEZ cette ligne
+      _ensureInTestDirectory(
+          binDir.path, testDir.path); // ← AJOUTEZ cette ligne
       await binDir.delete(recursive: true);
     }
 
     // 🛡️ SÉCURISÉ: Nettoyer le lib/ avec validation
     final testLibDir = Directory(path.join(testDir.path, 'lib'));
     if (await testLibDir.exists()) {
-      _ensureInTestDirectory(testLibDir.path, testDir.path); // ← AJOUTEZ cette ligne
+      _ensureInTestDirectory(
+          testLibDir.path, testDir.path); // ← AJOUTEZ cette ligne
       await testLibDir.delete(recursive: true);
     }
   });
@@ -94,10 +98,12 @@ void main() {
     if (await testDir.exists()) {
       // Vérifier qu'on supprime bien un dossier temporaire
       if (!testDir.path.contains('SAFE_flutter_localisation_test_')) {
-        throw Exception('🚨 SÉCURITÉ: Tentative de suppression d\'un dossier non-test!');
+        throw Exception(
+            '🚨 SÉCURITÉ: Tentative de suppression d\'un dossier non-test!');
       }
       if (testDir.path.contains(projectRoot)) {
-        throw Exception('🚨 SÉCURITÉ: Tentative de suppression dans le projet!');
+        throw Exception(
+            '🚨 SÉCURITÉ: Tentative de suppression dans le projet!');
       }
 
       await testDir.delete(recursive: true);
@@ -136,8 +142,6 @@ output-localization-file: app_localizations.dart
 synthetic-package: false
 ''');
   });
-
-
 
   test('should update l10n.yaml with correct flavor', () async {
     final flavor = 'test_flavor';

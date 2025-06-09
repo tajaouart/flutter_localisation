@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localisation/saas_translations.dart';
+import 'package:flutter_localisation/flutter_localisation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'home_page.dart';
 import 'localization/generated/app_localizations.dart';
 
-final _saasService = SaaSTranslationService(
-  config: const SaaSTranslationConfig(
+final _saasService = TranslationService(
+  config: const TranslationConfig(
     enableLogging: true,
-    apiBaseUrl: 'http://localhost:8000',
     secretKey: "sk_live_Z095M95SsXi-LqI39vduaa9Vhc-Zjug8oXjnST-DGNs",
     supportedLocales: ['en', 'es'],
     projectId: 31,
@@ -54,7 +53,7 @@ class _MyAppState extends State<MyApp> {
       home: Builder(
         builder: (context) {
           final localizations = AppLocalizations.of(context);
-          return SaaSTranslationProvider(
+          return TranslationProvider(
             service: _saasService,
             generatedLocalizations: localizations,
             child: HomePage(onLanguageChange: _changeLanguage),

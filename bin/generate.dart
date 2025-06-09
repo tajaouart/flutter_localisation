@@ -95,7 +95,7 @@ class SaaSTranslationGenerator {
     final isDependency = Directory('$_projectRoot/lib/src').existsSync();
     _outputPath = isDependency
         ? '$_projectRoot/lib/src/generated_methods.dart'
-        : '$_projectRoot/lib/generated_saas_methods.dart';
+        : '$_projectRoot/lib/generated_translation_methods.dart';
   }
 
   Future<String> _readLocalizationsFile() async {
@@ -199,11 +199,10 @@ class SaaSTranslationGenerator {
     buffer.writeln('// Generated on: ${DateTime.now().toIso8601String()}');
     buffer.writeln();
     buffer.writeln(
-        "import 'package:flutter_localisation/saas_translations.dart';");
+        "import 'package:flutter_localisation/flutter_localisation.dart';");
     buffer.writeln();
     buffer.writeln('/// Generated extension methods for SaaS translations');
-    buffer.writeln(
-        'extension GeneratedSaaSTranslationMethods on SaaSTranslations {');
+    buffer.writeln('extension GeneratedTranslationMethods on Translator {');
 
     for (final method in methods) {
       buffer.writeln();

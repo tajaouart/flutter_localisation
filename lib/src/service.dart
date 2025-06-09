@@ -1,277 +1,150 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_localisation/src/api/api_repository.dart';
+import 'package:flutter_localisation/src/api/cache_manager.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config.dart';
 
-/// Main service for managing SaaS-based translation overrides
-class SaaSTranslationService {
-  final Map<String, Map<String, String>> _memoryCache = {};
-  final Map<String, bool> _loadingStates = {};
-  final SaaSTranslationConfig _config;
-
-  // Version tracking
-  final Map<String, int> _localVersions = {};
-  late SharedPreferences _prefs;
-  bool _initialized = false;
-
-  // HTTP client for API calls
+class TranslationService {
+  final TranslationConfig _config;
   final http.Client _httpClient;
 
-  SaaSTranslationService({
-    SaaSTranslationConfig? config,
-    http.Client? httpClient,
-  })  : _config = config ?? const SaaSTranslationConfig(),
-        _httpClient = httpClient ?? http.Client();
+  late final ApiRepository _repository;
+  late final CacheManager _cache;
 
-  /// Initialize service - call this once at app start
+  final Map<String, bool> _loadingStates = {};
+  bool _initialized = false;
+
+  TranslationService({
+    TranslationConfig? config,
+    http.Client? httpClient,
+  })  : _config = config ?? const TranslationConfig(),
+        _httpClient = httpClient ?? http.Client() {
+    // The service now creates its own dependencies.
+    _repository = ApiRepository(_config, _httpClient);
+  }
+
+  /// Initialize service - call this once at app start.
   Future<void> initialize() async {
     if (_initialized) return;
+    _log('Initializing...');
 
-    _log('Initializing SaaS Translation Service...');
-    _prefs = await SharedPreferences.getInstance();
+    // Initialize cache manager with shared preferences.
+    final prefs = await SharedPreferences.getInstance();
+    _cache = CacheManager(prefs);
 
-    // Load cached translations into memory (BLOCKING - ensures data is ready)
-    await _loadCachedTranslations();
-    _log('Cache loaded, app can render with cached translations');
+    // Load translations from disk into memory.
+    await _cache.load(_config.supportedLocales ?? []);
+    _log(
+      'Cache loaded with keys for locales: ${_cache.memoryCache.keys.join(', ')}',
+    );
 
     _initialized = true;
 
-    // Only check for updates if we have API credentials (paid users)
-    if (_config.secretKey != null &&
-        _config.projectId != null &&
-        _config.flavorName != null) {
-      // Check for updates in background (NON-BLOCKING - happens after app starts)
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _checkForUpdatesAllLocales();
-      });
-    } else {
-      _log('No API credentials configured - running in offline mode');
-    }
-
-    _log('Service initialized');
+    // Trigger background updates for all locales.
+    Future.delayed(
+      const Duration(milliseconds: 100),
+      _checkForUpdatesAllLocales,
+    );
   }
 
-  /// Check if service is ready with cached data
-  bool get isReady => _initialized && _memoryCache.isNotEmpty;
+  /// Clean up resources, like the HTTP client.
+  void dispose() {
+    _httpClient.close();
+    _log('Service disposed.');
+  }
 
-  /// Check if API is configured (for paid users)
+  bool get isReady => _initialized;
+
   bool get isApiConfigured =>
-      _config.secretKey != null &&
-      _config.projectId != null &&
-      _config.flavorName != null;
+      _config.secretKey != null && _config.projectId != null;
 
-  /// Get override translation for a specific key
-  /// This is INSTANT - reads from memory cache, no async needed
-  String? getOverride(String locale, String key) {
-    return _memoryCache[locale]?[key];
+  String? getOverride(String locale, String key) =>
+      _cache.memoryCache[locale]?[key];
+
+  bool hasOverride(String locale, String key) =>
+      _cache.memoryCache[locale]?.containsKey(key) ?? false;
+
+  Map<String, int> getCacheStatus() =>
+      _cache.memoryCache.map((key, value) => MapEntry(key, value.length));
+
+  Future<void> clearCache() async {
+    await _cache.clearAll();
+    _log('Cache cleared.');
   }
 
-  /// Check if there's an override for a specific key
-  /// This is INSTANT - reads from memory cache
-  bool hasOverride(String locale, String key) {
-    return _memoryCache[locale]?.containsKey(key) ?? false;
-  }
-
-  /// Force refresh translations for a locale
-  Future<void> refreshTranslations(String locale) async {
+  Future<void> refresh(String locale) async {
     if (!isApiConfigured) {
-      _log('Cannot refresh - API not configured');
+      _log('Cannot refresh - API not configured.');
       return;
     }
-    await _checkAndFetchUpdates(locale, forceRefresh: true);
+    await _fetchAndApplyUpdates(locale, forceRefresh: true);
   }
 
-  /// Clear all cached data
-  Future<void> clearCache() async {
-    _memoryCache.clear();
-    _localVersions.clear();
-
-    // Clear from persistent storage
-    final keys = _prefs.getKeys().where((key) =>
-        key.startsWith('saas_trans_') || key.startsWith('saas_version_'));
-    for (final key in keys) {
-      await _prefs.remove(key);
-    }
-  }
-
-  /// Get cache status for debugging
-  Map<String, int> getCacheStatus() {
-    return _memoryCache
-        .map((locale, overrides) => MapEntry(locale, overrides.length));
-  }
-
-  Future<void> _loadCachedTranslations() async {
-    final stopwatch = Stopwatch()..start();
-    final locales = _config.supportedLocales ?? ['en', 'es'];
-
+  void _checkForUpdatesAllLocales() {
+    final locales = _config.supportedLocales ?? [];
     for (final locale in locales) {
-      final cached = _prefs.getString('saas_trans_$locale');
-      final version = _prefs.getInt('saas_version_$locale');
-
-      if (cached != null) {
-        try {
-          final translations = Map<String, String>.from(jsonDecode(cached));
-          _memoryCache[locale] = translations;
-          _localVersions[locale] = version ?? 0;
-          _log('Loaded ${translations.length} cached translations for $locale');
-        } catch (e) {
-          _log('Error loading cached translations for $locale: $e');
-        }
-      }
-    }
-
-    stopwatch.stop();
-    _log('Cache loaded in ${stopwatch.elapsedMilliseconds}ms');
-  }
-
-  Future<void> _checkForUpdatesAllLocales() async {
-    final locales = _config.supportedLocales ?? ['en', 'es'];
-
-    for (final locale in locales) {
-      // Non-blocking background check
-      _checkAndFetchUpdates(locale).catchError((e) {
+      _fetchAndApplyUpdates(locale).catchError((e) {
         _log('Background update failed for $locale: $e');
       });
     }
   }
 
-  Future<void> _checkAndFetchUpdates(
+  Future<void> _fetchAndApplyUpdates(
     String locale, {
     bool forceRefresh = false,
   }) async {
-    if (!isApiConfigured) return;
-
-    if (_loadingStates[locale] == true && !forceRefresh) {
-      return;
-    }
-
+    if (_loadingStates[locale] == true && !forceRefresh) return;
     _loadingStates[locale] = true;
 
     try {
-      final currentVersion = _localVersions[locale] ?? 0;
+      final currentVersion = _cache.localVersions[locale] ?? 0;
+      _log('Checking for updates for $locale from version $currentVersion...');
 
-      // Make API call to check for updates
-      final updateData = await _fetchTranslationUpdates(locale, currentVersion);
+      final updateData = await _repository.fetchUpdates(currentVersion);
 
-      if (updateData == null || !updateData['has_updates']) {
-        _log('No updates available for $locale');
+      if (updateData == null || updateData['has_updates'] != true) {
+        _log('No new updates for $locale.');
         return;
       }
 
-      // Extract translations based on locale
+      final newVersion = updateData['version'] as int;
       final allTranslations =
           updateData['translations'] as Map<String, dynamic>?;
-      if (allTranslations == null) {
-        _log('No translations in response');
-        return;
-      }
 
-      // Get translations for the specific locale
-      final localeTranslations =
-          allTranslations[locale] as Map<String, dynamic>?;
-      if (localeTranslations == null) {
-        _log('No translations for locale $locale');
-        return;
-      }
-
-      // Convert to Map<String, String>
-      final translations = localeTranslations.map(
-        (key, value) => MapEntry(key, value.toString()),
+      // Extract translations for the current locale only.
+      final newTranslations = Map<String, String>.from(
+        allTranslations?[locale] as Map? ?? {},
       );
 
-      // Update memory cache
-      _memoryCache[locale] = translations;
-      _localVersions[locale] = updateData['version'] as int;
-
-      // Persist to storage
-      await _persistTranslations(locale, {
-        'translations': translations,
-        'version': updateData['version'],
-      });
-
-      _log(
-          'Updated ${translations.length} translations for $locale to version ${updateData['version']}');
+      if (newTranslations.isNotEmpty) {
+        await _cache.save(locale, newTranslations, newVersion);
+        _log(
+          'Successfully updated $locale to version $newVersion with ${newTranslations.length} keys.',
+        );
+      }
     } catch (e) {
-      _log('Error updating translations for $locale: $e');
-      if (_config.throwOnError && forceRefresh) rethrow;
+      _log('Error during update process for $locale: $e');
     } finally {
       _loadingStates[locale] = false;
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchTranslationUpdates(
-      String locale, int currentVersion) async {
-    if (!isApiConfigured) return null;
-
-    try {
-      final uri =
-          Uri.parse('${_config.apiBaseUrl}/api/v1/translations/live-update/');
-
-      final response = await _httpClient
-          .post(
-            uri,
-            headers: {
-              'Authorization': 'Bearer ${_config.secretKey}',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'project_id': _config.projectId,
-              'flavor': _config.flavorName,
-              'current_version': currentVersion,
-            }),
-          )
-          .timeout(_config.apiTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data;
-      }
-
-      // Handle specific error cases
-      if (response.statusCode == 401) {
-        _log('Authentication failed - check your API key');
-      } else if (response.statusCode == 404) {
-        _log('Project or flavor not found');
-      } else if (response.statusCode == 429) {
-        _log('Rate limit exceeded');
-      } else if (response.statusCode == 500) {
-        _log('Server error: ${response.body}');
-      }
-
-      return null;
-    } catch (e) {
-      _log('Failed to fetch translations: $e');
-      return null;
-    }
-  }
-
-  Future<void> _persistTranslations(
-    String locale,
-    Map<String, dynamic> data,
-  ) async {
-    try {
-      await _prefs.setString(
-          'saas_trans_$locale', jsonEncode(data['translations']));
-      await _prefs.setInt('saas_version_$locale', data['version'] as int);
-      await _prefs.setString(
-          'saas_last_update_$locale', DateTime.now().toIso8601String());
-    } catch (e) {
-      _log('Failed to persist translations for $locale: $e');
-    }
-  }
-
   void _log(String message) {
     if (_config.enableLogging) {
-      debugPrint('[SaaSTranslations] $message');
+      debugPrint('[FlutterLocalisation] $message');
     }
   }
 
-  /// Dispose of resources
-  void dispose() {
-    _httpClient.close();
+  /// Returns a copy of all cached overrides for a given locale.
+  Map<String, String> getAllOverridesForLocale(String locale) {
+    // Return a copy to prevent external modification of the cache
+    return Map<String, String>.from(_cache.memoryCache[locale] ?? {});
   }
+
+  // A getter for the logging flag, used by the translator
+  bool get isLoggingEnabled => _config.enableLogging;
 }

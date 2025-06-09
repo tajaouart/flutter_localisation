@@ -127,11 +127,11 @@ class ICUMessageProcessor {
 
     String selectedCase = Intl.plural(
       count,
-      zero: zeroCase?.isNotEmpty == true ? zeroCase : null,
-      one: oneCase?.isNotEmpty == true ? oneCase : null,
-      two: twoCase?.isNotEmpty == true ? twoCase : null,
-      few: fewCase?.isNotEmpty == true ? fewCase : null,
-      many: manyCase?.isNotEmpty == true ? manyCase : null,
+      zero: zeroCase.isNotEmpty == true ? zeroCase : null,
+      one: oneCase.isNotEmpty == true ? oneCase : null,
+      two: twoCase.isNotEmpty == true ? twoCase : null,
+      few: fewCase.isNotEmpty == true ? fewCase : null,
+      many: manyCase.isNotEmpty == true ? manyCase : null,
       other: arbOtherCase.isNotEmpty ? arbOtherCase : fallbackOther,
       name: key,
       locale: locale.toString(),
@@ -146,7 +146,6 @@ class ICUMessageProcessor {
     return substitutePlaceholders(selectedCase, substArgs, metadata);
   }
 
-  // ========== EXISTING METHODS (unchanged) ==========
   String substitutePlaceholders(
     String template,
     Map<String, dynamic> substitutions,

@@ -1,6 +1,6 @@
 // test/provider_test.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_localisation/saas_translations.dart';
+import 'package:flutter_localisation/flutter_localisation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,9 +9,13 @@ class MockAppLocalizations {
   static const supportedLocales = [Locale('en'), Locale('es')];
 
   String hello(String name) => 'Hello $name!';
+
   String welcomeMessage(String username) => 'Welcome back, $username!';
+
   String get appTitle => 'Test App';
+
   String get simpleGreeting => 'Good morning!';
+
   String itemsInCart(int count) {
     if (count == 0) return 'No items';
     if (count == 1) return '1 item';
@@ -20,7 +24,7 @@ class MockAppLocalizations {
 }
 
 // Test SaaS service that can be controlled for testing
-class TestSaaSTranslationService extends SaaSTranslationService {
+class TestSaaSTranslationService extends TranslationService {
   final Map<String, Map<String, String>> _testOverrides = {};
   bool _testCacheLoaded = false;
 
@@ -66,16 +70,16 @@ void main() {
 
     testWidgets('SaaSTranslationProvider provides service correctly',
         (tester) async {
-      late SaaSTranslationService retrievedService;
+      late TranslationService retrievedService;
 
       await tester.pumpWidget(
         MaterialApp(
-          home: SaaSTranslationProvider(
+          home: TranslationProvider(
             service: service,
             generatedLocalizations: mockLocalizations,
             child: Builder(
               builder: (context) {
-                retrievedService = SaaSTranslationProvider.of(context).service;
+                retrievedService = TranslationProvider.of(context).service;
                 return Container();
               },
             ),
@@ -87,11 +91,11 @@ void main() {
     });
 
     testWidgets('Context extension provides SaaSTranslations', (tester) async {
-      late SaaSTranslations translations;
+      late Translator translations;
 
       await tester.pumpWidget(
         MaterialApp(
-          home: SaaSTranslationProvider(
+          home: TranslationProvider(
             service: service,
             generatedLocalizations: mockLocalizations,
             child: Builder(
@@ -104,7 +108,7 @@ void main() {
         ),
       );
 
-      expect(translations, isA<SaaSTranslations>());
+      expect(translations, isA<Translator>());
       expect(translations.service, equals(service));
       expect(translations.generatedLocalizations, equals(mockLocalizations));
     });
@@ -123,7 +127,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: MockAppLocalizations.supportedLocales,
-            home: SaaSTranslationProvider(
+            home: TranslationProvider(
               service: service,
               generatedLocalizations: mockLocalizations,
               child: Builder(
@@ -158,7 +162,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: MockAppLocalizations.supportedLocales,
-            home: SaaSTranslationProvider(
+            home: TranslationProvider(
               service: service,
               generatedLocalizations: mockLocalizations,
               child: Builder(
@@ -193,7 +197,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: MockAppLocalizations.supportedLocales,
-            home: SaaSTranslationProvider(
+            home: TranslationProvider(
               service: service,
               generatedLocalizations: mockLocalizations,
               child: Builder(
@@ -330,7 +334,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: MockAppLocalizations.supportedLocales,
-            home: SaaSTranslationProvider(
+            home: TranslationProvider(
               service: service,
               generatedLocalizations: mockLocalizations,
               child: Builder(
@@ -362,7 +366,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: MockAppLocalizations.supportedLocales,
-            home: SaaSTranslationProvider(
+            home: TranslationProvider(
               service: service,
               generatedLocalizations: mockLocalizations,
               child: Builder(

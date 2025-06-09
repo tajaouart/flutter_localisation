@@ -1,6 +1,6 @@
-import 'package:example/generated_saas_methods.dart';
+import 'package:example/generated_translation_methods.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localisation/saas_translations.dart';
+import 'package:flutter_localisation/flutter_localisation.dart';
 
 /// Example home page showing SaaS translations in action
 class HomePage extends StatefulWidget {
@@ -18,7 +18,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final currentLocale = Localizations.localeOf(context);
-    final saasService = context.saasTranslations!;
+    final translationsService = context.translations!;
 
     return Scaffold(
       appBar: AppBar(
@@ -155,7 +155,7 @@ class _HomePageState extends State<HomePage> {
                           height: 8,
                           decoration: BoxDecoration(
                             color:
-                                saasService.getCacheStatus().isNotEmpty
+                                translationsService.getCacheStatus().isNotEmpty
                                     ? Colors.green
                                     : Colors.grey,
                             shape: BoxShape.circle,
@@ -164,12 +164,14 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            saasService.getCacheStatus().isNotEmpty
+                            translationsService.getCacheStatus().isNotEmpty
                                 ? 'SaaS overrides active (cached & synced)'
                                 : 'Using standard localizations',
                             style: TextStyle(
                               color:
-                                  saasService.getCacheStatus().isNotEmpty
+                                  translationsService
+                                          .getCacheStatus()
+                                          .isNotEmpty
                                       ? Colors.green[700]
                                       : Colors.grey[600],
                               fontWeight: FontWeight.w500,
@@ -178,9 +180,9 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
-                    if (saasService.getCacheStatus().isNotEmpty) ...[
+                    if (translationsService.getCacheStatus().isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      ...saasService.getCacheStatus().entries.map(
+                      ...translationsService.getCacheStatus().entries.map(
                         (entry) => Padding(
                           padding: const EdgeInsets.only(left: 16),
                           child: Text(
