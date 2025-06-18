@@ -240,7 +240,7 @@ void main() {
         generated: mockGenerated,
         locale: const Locale('fr'), // Switch locale
         testLogic: (context, translator) {
-          var result = translator?.translate(
+          var result = translator.translate(
               'inboxMessage', {'count': 5, 'name': 'Mounir'}, () => 'fallback');
           expect(result, 'Salut Mounir, tu as 5 nouveaux messages.');
         },

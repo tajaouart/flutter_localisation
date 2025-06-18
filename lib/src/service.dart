@@ -23,7 +23,6 @@ class TranslationService {
     http.Client? httpClient,
   })  : _config = config ?? const TranslationConfig(),
         _httpClient = httpClient ?? http.Client() {
-    // The service now creates its own dependencies.
     _repository = ApiRepository(_config, _httpClient);
   }
 
@@ -32,11 +31,9 @@ class TranslationService {
     if (_initialized) return;
     _log('Initializing...');
 
-    // Initialize cache manager with shared preferences.
     final prefs = await SharedPreferences.getInstance();
     _cache = CacheManager(prefs);
 
-    // Load translations from disk into memory.
     await _cache.load(_config.supportedLocales ?? []);
     _log(
       'Cache loaded with keys for locales: ${_cache.memoryCache.keys.join(', ')}',
@@ -44,11 +41,7 @@ class TranslationService {
 
     _initialized = true;
 
-    // Trigger background updates for all locales.
-    Future.delayed(
-      const Duration(milliseconds: 100),
-      _checkForUpdatesAllLocales,
-    );
+    _checkForUpdatesAllLocales();
   }
 
   /// Clean up resources, like the HTTP client.
@@ -101,7 +94,7 @@ class TranslationService {
     _loadingStates[locale] = true;
 
     try {
-      final currentVersion = _cache.localVersions[locale] ?? 0;
+      final currentVersion = _cache.localVersions[locale] ?? "";
       _log('Checking for updates for $locale from version $currentVersion...');
 
       final updateData = await _repository.fetchUpdates(currentVersion);
@@ -111,11 +104,10 @@ class TranslationService {
         return;
       }
 
-      final newVersion = updateData['version'] as int;
+      final newVersion = updateData['version'] as String;
       final allTranslations =
           updateData['translations'] as Map<String, dynamic>?;
 
-      // Extract translations for the current locale only.
       final newTranslations = Map<String, String>.from(
         allTranslations?[locale] as Map? ?? {},
       );
@@ -139,12 +131,9 @@ class TranslationService {
     }
   }
 
-  /// Returns a copy of all cached overrides for a given locale.
   Map<String, String> getAllOverridesForLocale(String locale) {
-    // Return a copy to prevent external modification of the cache
     return Map<String, String>.from(_cache.memoryCache[locale] ?? {});
   }
 
-  // A getter for the logging flag, used by the translator
   bool get isLoggingEnabled => _config.enableLogging;
 }

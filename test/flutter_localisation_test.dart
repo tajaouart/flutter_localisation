@@ -5,13 +5,11 @@ import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
 void main() {
-  // ✅ SÉCURISÉ : Utiliser un dossier temporaire unique
   late Directory testDir;
   late File l10nFile;
   late String projectRoot;
   late String scriptPath;
 
-// ✅ AJOUTEZ cette fonction de sécurité après les imports :
   void _ensureInTestDirectory(String pathToCheck, String testDirPath) {
     if (!pathToCheck.contains('flutter_localisation_test_')) {
       throw Exception(
@@ -23,7 +21,6 @@ void main() {
     }
   }
 
-// ✅ MODIFIEZ votre setUpAll() - remplacez la partie création testDir :
   setUpAll(() async {
     // Sauvegarder le répertoire du projet
     projectRoot = Directory.current.path;
@@ -61,7 +58,6 @@ void main() {
     print('📄 Script path: $scriptPath');
   });
 
-// ✅ MODIFIEZ votre tearDown() - ajoutez les validations avant chaque delete :
   tearDown(() async {
     // 🛡️ GARDE-FOU: Nettoyer seulement les fichiers de test
     if (await l10nFile.exists()) {
@@ -92,7 +88,6 @@ void main() {
     }
   });
 
-// ✅ MODIFIEZ votre tearDownAll() - ajoutez la validation :
   tearDownAll(() async {
     // 🛡️ GARDE-FOU: Double vérification avant suppression
     if (await testDir.exists()) {
@@ -114,7 +109,6 @@ void main() {
   setUp(() async {
     l10nFile = File(path.join(testDir.path, 'l10n.yaml'));
 
-    // ✅ AJOUT : Créer un pubspec.yaml minimal pour les tests
     final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
     await pubspecFile.writeAsString('''
 name: test_project
@@ -170,7 +164,6 @@ synthetic-package: false
     expect(updatedContent.contains('arb-dir: lib/l10n/$flavor'), isTrue);
   });
 
-  // ✅ NOUVEAU: Test du message d'aide mis à jour
   test('should show updated usage message with --with-saas flag', () async {
     // Run the localization generator script without arguments
     final result = await Process.run(
@@ -194,7 +187,6 @@ synthetic-package: false
             'Add --with-saas to also generate SaaS methods automatically.'));
   });
 
-  // ✅ NOUVEAU: Test que le tip est affiché sans --with-saas
   test('should show tip when --with-saas flag is not provided', () async {
     final flavor = 'test_flavor';
 
@@ -222,7 +214,6 @@ synthetic-package: false
             '💡 Tip: Add --with-saas to also generate SaaS methods automatically'));
   });
 
-  // ✅ NOUVEAU: Test avec --with-saas flag (pas de script generate.dart)
   test('should handle missing generate.dart script gracefully with --with-saas',
       () async {
     final flavor = 'test_flavor';
@@ -257,7 +248,6 @@ synthetic-package: false
             '💡 Skipping SaaS method generation. Run "saas_generate" manually if needed.'));
   });
 
-  // ✅ NOUVEAU: Test avec un mock generate.dart script
   test(
       'should run SaaS generation successfully with --with-saas when script exists',
       () async {
@@ -299,7 +289,6 @@ void main() {
     expect(output, contains('✅ SaaS methods generated successfully!'));
   });
 
-  // ✅ NOUVEAU: Test gestion d'erreur du script SaaS
   test('should handle SaaS generation script failure gracefully', () async {
     final flavor = 'test_flavor';
 
@@ -671,7 +660,6 @@ synthetic-package: false
     });
 
     tearDown(() async {
-      // ✅ SÉCURISÉ : Nettoyer seulement dans le dossier de test
       final testLibDir = Directory(path.join(testDir.path, 'lib'));
       if (await testLibDir.exists()) {
         await testLibDir.delete(recursive: true);
@@ -681,13 +669,11 @@ synthetic-package: false
         await groupL10nFile.delete();
       }
 
-      // Nettoyer le pubspec.yaml du groupe End-to-End
       final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
       if (await pubspecFile.exists()) {
         await pubspecFile.delete();
       }
 
-      // ✅ NOUVEAU: Nettoyer les scripts mock du groupe End-to-End aussi
       final binDir = Directory(path.join(testDir.path, 'bin'));
       if (await binDir.exists()) {
         await binDir.delete(recursive: true);
@@ -745,7 +731,6 @@ synthetic-package: false
     });
   });
 
-  // ✅ NOUVEAU: Tests spécifiques pour la fonctionnalité SaaS
   group('SaaS Integration Tests', () {
     test('should detect --with-saas flag correctly', () async {
       final flavor = 'test_flavor';
@@ -755,7 +740,6 @@ synthetic-package: false
       await dir.create(recursive: true);
       await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
 
-      // ✅ Assurer qu'aucun script mock n'existe
       final binDir = Directory(path.join(testDir.path, 'bin'));
       if (await binDir.exists()) {
         await binDir.delete(recursive: true);

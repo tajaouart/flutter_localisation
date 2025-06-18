@@ -28,8 +28,6 @@ dev_dependencies:
 
   intl:
   flutter_lints:
-  flutter_localisation:
-    path: ../
 
 flutter:
   generate: true

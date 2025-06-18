@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CacheManager {
   final SharedPreferences _prefs;
   final Map<String, Map<String, String>> memoryCache = {};
-  final Map<String, int> localVersions = {};
+  final Map<String, String> localVersions = {};
 
   CacheManager(this._prefs);
 
@@ -14,13 +14,15 @@ class CacheManager {
   Future<void> load(List<String> supportedLocales) async {
     for (final locale in supportedLocales) {
       final cachedJson = _prefs.getString('flutter_trans_$locale');
-      final version = _prefs.getInt('flutter_version_$locale');
 
       if (cachedJson != null) {
         try {
           memoryCache[locale] =
               Map<String, String>.from(jsonDecode(cachedJson));
-          localVersions[locale] = version ?? 0;
+
+          // Get the version, and if it's missing (null), default to an empty string.
+          final version = _prefs.getString('flutter_version_$locale');
+          localVersions[locale] = version ?? '';
         } catch (e) {
           // Handle potential corruption of cached data.
           await clearLocale(locale);
@@ -33,12 +35,12 @@ class CacheManager {
   Future<void> save(
     String locale,
     Map<String, String> translations,
-    int version,
+    String version,
   ) async {
     memoryCache[locale] = translations;
     localVersions[locale] = version;
     await _prefs.setString('flutter_trans_$locale', jsonEncode(translations));
-    await _prefs.setInt('flutter_version_$locale', version);
+    await _prefs.setString('flutter_version_$locale', version);
   }
 
   /// Clears all data for a specific locale.

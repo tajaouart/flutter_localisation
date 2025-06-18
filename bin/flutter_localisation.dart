@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as path;
 
 final Logger _logger = Logger('LocalizationGenerator');
 
@@ -72,57 +73,101 @@ Future<void> main(List<String> args) async {
   }
 }
 
-// ✅ NOUVEAU: Function pour lancer generate.dart
 Future<void> _runSaaSGeneration() async {
   try {
-    // Essayer plusieurs emplacements possibles pour generate.dart
-    final possiblePaths = [
-      'bin/generate.dart',
-      '../bin/generate.dart',
-      'packages/flutter_localisation/bin/generate.dart',
-    ];
+    // First, try the new approach with package executable
+    _logger.info('🔧 Running: dart run flutter_localisation:generate');
 
-    String? generateScript;
-    for (final path in possiblePaths) {
-      if (await File(path).exists()) {
-        generateScript = path;
-        break;
-      }
-    }
+    final packageResult = await Process.run(
+      'dart',
+      ['run', 'flutter_localisation:generate'],
+      workingDirectory: _findProjectRoot() ?? Directory.current.path,
+    );
 
-    if (generateScript == null) {
-      _logger.warning(
-          '❌ SaaS generation script not found in any of these locations:');
-      for (final path in possiblePaths) {
-        _logger.warning('   - $path');
+    // If package approach works, we're done
+    if (packageResult.exitCode == 0) {
+      _logger.info('📤 SaaS generation stdout: ${packageResult.stdout}');
+      if (packageResult.stderr.isNotEmpty) {
+        _logger.warning('📤 SaaS generation stderr: ${packageResult.stderr}');
       }
-      _logger.info(
-          '💡 Skipping SaaS method generation. Run "saas_generate" manually if needed.');
+      _logger.info('✅ SaaS methods generated successfully!');
       return;
     }
 
-    _logger.info('📄 Found SaaS script: $generateScript');
-    _logger.info('🔧 Running: dart run $generateScript');
+    // If package approach failed, fall back to the old file-based approach
+    if (packageResult.stderr.toString().contains('Could not find package')) {
+      _logger
+          .info('Package executable not found, trying direct file approach...');
 
-    final result = await Process.run('dart', ['run', generateScript]);
+      // Use the old working code
+      final possiblePaths = [
+        'bin/generate.dart',
+        '../bin/generate.dart',
+        'packages/flutter_localisation/bin/generate.dart',
+      ];
 
-    _logger.info('📤 SaaS generation stdout: ${result.stdout}');
-    if (result.stderr.isNotEmpty) {
-      _logger.warning('📤 SaaS generation stderr: ${result.stderr}');
-    }
+      String? generateScript;
+      for (final path in possiblePaths) {
+        if (await File(path).exists()) {
+          generateScript = path;
+          break;
+        }
+      }
 
-    if (result.exitCode == 0) {
-      _logger.info('✅ SaaS methods generated successfully!');
+      if (generateScript == null) {
+        _logger.warning(
+            '❌ SaaS generation script not found in any of these locations:');
+        for (final path in possiblePaths) {
+          _logger.warning('   - $path');
+        }
+        _logger.info(
+            '💡 Skipping SaaS method generation. Run "saas_generate" manually if needed.');
+        return;
+      }
+
+      _logger.info('📄 Found SaaS script: $generateScript');
+      _logger.info('🔧 Running: dart run $generateScript');
+
+      final fileResult = await Process.run('dart', ['run', generateScript]);
+
+      _logger.info('📤 SaaS generation stdout: ${fileResult.stdout}');
+      if (fileResult.stderr.isNotEmpty) {
+        _logger.warning('📤 SaaS generation stderr: ${fileResult.stderr}');
+      }
+
+      if (fileResult.exitCode == 0) {
+        _logger.info('✅ SaaS methods generated successfully!');
+      } else {
+        _logger.severe(
+            '❌ SaaS generation failed with exit code: ${fileResult.exitCode}');
+        _logger.severe('Error output: ${fileResult.stderr}');
+        exit(1);
+      }
     } else {
+      // Package was found but failed for another reason
+      _logger.info('📤 SaaS generation stdout: ${packageResult.stdout}');
+      _logger.warning('📤 SaaS generation stderr: ${packageResult.stderr}');
       _logger.severe(
-          '❌ SaaS generation failed with exit code: ${result.exitCode}');
-      _logger.severe('Error output: ${result.stderr}');
+          '❌ SaaS generation failed with exit code: ${packageResult.exitCode}');
       exit(1);
     }
   } catch (e) {
     _logger.severe('💥 Exception during SaaS generation: $e');
     exit(1);
   }
+}
+
+String? _findProjectRoot() {
+  var directory = Directory.current;
+
+  while (directory.path != directory.parent.path) {
+    final pubspecFile = File(path.join(directory.path, 'pubspec.yaml'));
+    if (pubspecFile.existsSync()) {
+      return directory.path;
+    }
+    directory = directory.parent;
+  }
+  return null;
 }
 
 Future<void> _ensureL10nFile(

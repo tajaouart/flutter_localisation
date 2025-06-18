@@ -20,7 +20,6 @@ class SaaSTranslationGenerator {
   late final String _projectRoot;
   late final String _localizationsPath;
   late final String _outputPath;
-  late final String _packageName;
 
   Future<void> generate() async {
     _findProjectRoot();
@@ -64,12 +63,6 @@ class SaaSTranslationGenerator {
   }
 
   void _detectPaths() {
-    // Read pubspec.yaml to get package name
-    final pubspecFile = File('$_projectRoot/pubspec.yaml');
-    final pubspecContent = pubspecFile.readAsStringSync();
-    final pubspecYaml = _parseYaml(pubspecContent);
-    _packageName = pubspecYaml['name'] ?? 'app';
-
     // Auto-detect generated localizations path
     final commonPaths = [
       'lib/localization/generated/app_localizations.dart',
@@ -247,24 +240,6 @@ class SaaSTranslationGenerator {
     final outputFile = File(_outputPath);
     await outputFile.parent.create(recursive: true);
     await outputFile.writeAsString(content);
-  }
-
-  Map<String, dynamic> _parseYaml(String content) {
-    final lines = content.split('\n');
-    final result = <String, dynamic>{};
-
-    for (final line in lines) {
-      if (line.contains(':') && !line.trim().startsWith('#')) {
-        final parts = line.split(':');
-        if (parts.length >= 2) {
-          final key = parts[0].trim();
-          final value = parts[1].trim();
-          result[key] = value;
-        }
-      }
-    }
-
-    return result;
   }
 }
 

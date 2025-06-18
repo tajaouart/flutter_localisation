@@ -12,7 +12,7 @@ class ApiRepository {
 
   ApiRepository(this._config, this._httpClient);
 
-  Future<Map<String, dynamic>?> fetchUpdates(int currentVersion) async {
+  Future<Map<String, dynamic>?> fetchUpdates(String currentVersion) async {
     // API is only called for configured (paid) users.
     if (_config.secretKey == null ||
         _config.projectId == null ||
@@ -24,6 +24,15 @@ class ApiRepository {
       'https://api.flutterlocalisation.com/api/v1/translations/live-update/',
     );
 
+    final Map<String, dynamic> payload = {
+      'project_id': _config.projectId,
+      'flavor': _config.flavorName,
+    };
+
+    if (currentVersion.isNotEmpty) {
+      payload['current_version'] = currentVersion;
+    }
+
     try {
       final response = await _httpClient.post(
         uri,
@@ -31,19 +40,13 @@ class ApiRepository {
           'Authorization': 'Bearer ${_config.secretKey}',
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        body: jsonEncode({
-          'project_id': _config.projectId,
-          'flavor': _config.flavorName,
-          'current_version': currentVersion,
-        }),
+        body: jsonEncode(payload),
       );
-      ;
 
       if (response.statusCode == 200) {
         // Use utf8.decode to ensure proper handling of all characters.
         return jsonDecode(utf8.decode(response.bodyBytes));
       } else {
-        // Log specific errors without throwing to avoid crashing the app.
         _logError('API Error ${response.statusCode}: Failed to fetch updates.');
         return null;
       }
