@@ -2,7 +2,7 @@ import 'package:example/generated_translation_methods.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
 
-/// Example home page showing SaaS translations in action
+/// Example home page showing FlutterLocalisation translations in action
 class HomePage extends StatefulWidget {
   final Function(Locale) onLanguageChange;
 
@@ -62,7 +62,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'SaaS Translations Demo',
+                      'FlutterLocalisation Translations Demo',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
@@ -142,7 +142,7 @@ class _HomePageState extends State<HomePage> {
                         const Icon(Icons.settings_system_daydream, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'SaaS Translation Status',
+                          'FlutterLocalisation Translation Status',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ],
@@ -165,7 +165,7 @@ class _HomePageState extends State<HomePage> {
                         Expanded(
                           child: Text(
                             translationsService.getCacheStatus().isNotEmpty
-                                ? 'SaaS overrides active (cached & synced)'
+                                ? 'FlutterLocalisation overrides active (cached & synced)'
                                 : 'Using standard localizations',
                             style: TextStyle(
                               color:

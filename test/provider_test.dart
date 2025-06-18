@@ -23,8 +23,8 @@ class MockAppLocalizations {
   }
 }
 
-// Test SaaS service that can be controlled for testing
-class TestSaaSTranslationService extends TranslationService {
+// Test FlutterLocalisation service that can be controlled for testing
+class TestFlutterLocalisationTranslationService extends TranslationService {
   final Map<String, Map<String, String>> _testOverrides = {};
   bool _testCacheLoaded = false;
 
@@ -59,16 +59,16 @@ class TestSaaSTranslationService extends TranslationService {
 }
 
 void main() {
-  group('SaaS Translation Provider Tests', () {
-    late TestSaaSTranslationService service;
+  group('FlutterLocalisation Translation Provider Tests', () {
+    late TestFlutterLocalisationTranslationService service;
     late MockAppLocalizations mockLocalizations;
 
     setUp(() {
-      service = TestSaaSTranslationService();
+      service = TestFlutterLocalisationTranslationService();
       mockLocalizations = MockAppLocalizations();
     });
 
-    testWidgets('SaaSTranslationProvider provides service correctly',
+    testWidgets('TranslationProvider provides service correctly',
         (tester) async {
       late TranslationService retrievedService;
 
@@ -90,7 +90,8 @@ void main() {
       expect(retrievedService, equals(service));
     });
 
-    testWidgets('Context extension provides SaaSTranslations', (tester) async {
+    testWidgets('Context extension provides FlutterLocalisation',
+        (tester) async {
       late Translator translations;
 
       await tester.pumpWidget(
@@ -134,7 +135,7 @@ void main() {
                 builder: (context) {
                   // Even with override set, should return null when cache not loaded
                   service._testOverrides['en'] = {
-                    'hello': 'SaaS Hello {name}!'
+                    'hello': 'FlutterLocalisation Hello {name}!'
                   };
                   result = service.getOverride('en', 'hello');
                   return Container();
@@ -150,7 +151,9 @@ void main() {
       testWidgets('uses bundled translations when cache not loaded',
           (tester) async {
         service.setCacheLoaded(false); // Simulate cache not loaded
-        service._testOverrides['en'] = {'hello': 'SaaS Hello {name}!'};
+        service._testOverrides['en'] = {
+          'hello': 'FlutterLocalisation Hello {name}!'
+        };
 
         String? result;
 
@@ -183,9 +186,11 @@ void main() {
         expect(result, equals('Hello World!'));
       });
 
-      testWidgets('uses SaaS translations when cache loaded', (tester) async {
+      testWidgets('uses FlutterLocalisation translations when cache loaded',
+          (tester) async {
         service.setCacheLoaded(true); // Cache is loaded
-        service.setTestOverrides('en', {'hello': 'SaaS Hello {name}!'});
+        service.setTestOverrides(
+            'en', {'hello': 'FlutterLocalisation Hello {name}!'});
 
         String? result;
 
@@ -214,8 +219,8 @@ void main() {
           ),
         );
 
-        // Should use SaaS translation since cache is loaded
-        expect(result, equals('SaaS Hello World!'));
+        // Should use FlutterLocalisation translation since cache is loaded
+        expect(result, equals('FlutterLocalisation Hello World!'));
       });
     });
 
@@ -223,8 +228,8 @@ void main() {
       test('handles zero case correctly', () {
         const template =
             '{count, plural, =0{🛒 No items} =1{🛒 1 item} other{🛒 {count} items}}';
-        final result =
-            TestSaaSTranslations.testHandleICUPlural(template, {'count': 0});
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
+            template, {'count': 0});
 
         expect(result, equals('🛒 No items'));
       });
@@ -232,8 +237,8 @@ void main() {
       test('handles one case correctly', () {
         const template =
             '{count, plural, =0{🛒 No items} =1{🛒 1 item} other{🛒 {count} items}}';
-        final result =
-            TestSaaSTranslations.testHandleICUPlural(template, {'count': 1});
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
+            template, {'count': 1});
 
         expect(result, equals('🛒 1 item'));
       });
@@ -241,25 +246,25 @@ void main() {
       test('handles other case correctly', () {
         const template =
             '{count, plural, =0{🛒 No items} =1{🛒 1 item} other{🛒 {count} items}}';
-        final result =
-            TestSaaSTranslations.testHandleICUPlural(template, {'count': 5});
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
+            template, {'count': 5});
 
         expect(result, equals('🛒 5 items'));
       });
 
       test('handles complex ICU with emojis and placeholders', () {
         const template =
-            '{count, plural, =0{🛒 SaaS: No items in cart} =1{🛒 SaaS: 1 amazing item} other{🛒 SaaS: {count} amazing items}}';
-        final result =
-            TestSaaSTranslations.testHandleICUPlural(template, {'count': 10});
+            '{count, plural, =0{🛒 FlutterLocalisation: No items in cart} =1{🛒 FlutterLocalisation: 1 amazing item} other{🛒 FlutterLocalisation: {count} amazing items}}';
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
+            template, {'count': 10});
 
-        expect(result, equals('🛒 SaaS: 10 amazing items'));
+        expect(result, equals('🛒 FlutterLocalisation: 10 amazing items'));
       });
 
       test('handles nested braces correctly', () {
         const template =
             '{count, plural, =0{No {type} items} =1{1 {type} item} other{{count} {type} items}}';
-        final result = TestSaaSTranslations.testHandleICUPlural(
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
             template, {'count': 3, 'type': 'special'});
 
         expect(result, equals('3 special items'));
@@ -267,15 +272,16 @@ void main() {
 
       test('handles malformed ICU gracefully', () {
         const template = '{count, plural, broken}';
-        final result =
-            TestSaaSTranslations.testHandleICUPlural(template, {'count': 1});
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
+            template, {'count': 1});
 
         expect(result, equals(template)); // Should return original template
       });
 
       test('handles missing count parameter', () {
         const template = '{count, plural, =0{No items} other{{count} items}}';
-        final result = TestSaaSTranslations.testHandleICUPlural(template, {});
+        final result = TestFlutterLocalisationTranslations.testHandleICUPlural(
+            template, {});
 
         expect(result, equals('No items')); // Should default to count = 0
       });
@@ -284,8 +290,9 @@ void main() {
     group('Simple String Replacement Tests', () {
       test('replaces basic placeholders', () {
         const template = 'Hello {name}!';
-        final result = TestSaaSTranslations.testSimpleStringReplacement(
-            template, {'name': 'World'});
+        final result =
+            TestFlutterLocalisationTranslations.testSimpleStringReplacement(
+                template, {'name': 'World'});
 
         expect(result, equals('Hello World!'));
       });
@@ -293,7 +300,8 @@ void main() {
       test('handles multiple placeholders', () {
         const template = 'Welcome {username}, you have {count} messages';
         final result =
-            TestSaaSTranslations.testSimpleStringReplacement(template, {
+            TestFlutterLocalisationTranslations.testSimpleStringReplacement(
+                template, {
           'username': 'Alice',
           'count': 5,
         });
@@ -303,8 +311,9 @@ void main() {
 
       test('handles ICU plurals by delegating to ICU processor', () {
         const template = '{count, plural, =0{No items} other{{count} items}}';
-        final result = TestSaaSTranslations.testSimpleStringReplacement(
-            template, {'count': 3});
+        final result =
+            TestFlutterLocalisationTranslations.testSimpleStringReplacement(
+                template, {'count': 3});
 
         expect(result, equals('3 items'));
       });
@@ -312,7 +321,8 @@ void main() {
       test('handles missing placeholders gracefully', () {
         const template = 'Hello {name}!';
         final result =
-            TestSaaSTranslations.testSimpleStringReplacement(template, {});
+            TestFlutterLocalisationTranslations.testSimpleStringReplacement(
+                template, {});
 
         expect(result,
             equals('Hello {name}!')); // Should leave placeholder unchanged
@@ -320,9 +330,11 @@ void main() {
     });
 
     group('Translation Resolution Tests', () {
-      testWidgets('uses SaaS override when available', (tester) async {
-        // Set up SaaS override using the test service
-        service.setTestOverrides('en', {'hello': 'SaaS Hello {name}!'});
+      testWidgets('uses FlutterLocalisation override when available',
+          (tester) async {
+        // Set up FlutterLocalisation override using the test service
+        service.setTestOverrides(
+            'en', {'hello': 'FlutterLocalisation Hello {name}!'});
 
         String? result;
 
@@ -351,7 +363,7 @@ void main() {
           ),
         );
 
-        expect(result, equals('SaaS Hello World!'));
+        expect(result, equals('FlutterLocalisation Hello World!'));
       });
 
       testWidgets('falls back to generated localizations when no override',
@@ -432,7 +444,7 @@ void main() {
 }
 
 // Test helper class to expose private methods for testing
-class TestSaaSTranslations {
+class TestFlutterLocalisationTranslations {
   static String testHandleICUPlural(
       String template, Map<String, dynamic> args) {
     try {

@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'home_page.dart';
 import 'localization/generated/app_localizations.dart';
 
-final _saasService = TranslationService(
+final _flutterLocalisationService = TranslationService(
   config: const TranslationConfig(
     enableLogging: true,
     secretKey: "sk_live_Z095M95SsXi-LqI39vduaa9Vhc-Zjug8oXjnST-DGNs",
@@ -17,7 +17,7 @@ final _saasService = TranslationService(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _saasService.initialize();
+  await _flutterLocalisationService.initialize();
   runApp(MyApp());
 }
 
@@ -41,7 +41,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SaaS Translations Example',
+      title: 'FlutterLocalisation Translations Example',
       locale: _currentLocale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -54,7 +54,7 @@ class _MyAppState extends State<MyApp> {
         builder: (context) {
           final localizations = AppLocalizations.of(context);
           return TranslationProvider(
-            service: _saasService,
+            service: _flutterLocalisationService,
             generatedLocalizations: localizations,
             child: HomePage(onLanguageChange: _changeLanguage),
           );

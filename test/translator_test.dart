@@ -11,7 +11,7 @@ class MockGeneratedLocalizations {
 }
 
 /// A unified manual mock that handles locale-specific overrides.
-class ManualMockSaaSTranslationService implements TranslationService {
+class ManualMockTranslationService implements TranslationService {
   /// FIX: This is now a nested map to support multiple locales.
   /// The structure is: {'locale_code': {'key': 'value'}}
   Map<String, Map<String, String>> overridesToReturn = {};
@@ -68,7 +68,7 @@ void main() {
   /// A unified helper that takes the mocks and an optional locale.
   Future<void> pumpTranslatorWidget(
     WidgetTester tester, {
-    required ManualMockSaaSTranslationService service,
+    required ManualMockTranslationService service,
     required MockGeneratedLocalizations generated,
     Locale locale = const Locale('en'), // Defaults to 'en' for simpler tests
     required Function(BuildContext context, Translator translator) testLogic,
@@ -105,16 +105,17 @@ void main() {
     );
   }
 
-  group('SaaSTranslator (Unified Manual Mock)', () {
-    late ManualMockSaaSTranslationService mockService;
+  group('FlutterLocalisation (Unified Manual Mock)', () {
+    late ManualMockTranslationService mockService;
     late MockGeneratedLocalizations mockGenerated;
 
     setUp(() {
-      mockService = ManualMockSaaSTranslationService();
+      mockService = ManualMockTranslationService();
       mockGenerated = MockGeneratedLocalizations();
     });
 
-    testWidgets('translate uses fallback when no SaaS override exists',
+    testWidgets(
+        'translate uses fallback when no FlutterLocalisation override exists',
         (tester) async {
       // ARRANGE: No overrides are set.
       mockService.overridesToReturn = {};
@@ -135,11 +136,12 @@ void main() {
       );
     });
 
-    testWidgets('translate uses SaaS override for a simple string',
+    testWidgets(
+        'translate uses FlutterLocalisation override for a simple string',
         (tester) async {
       // ARRANGE: Use the nested map structure, even for a single locale.
       mockService.overridesToReturn = {
-        'en': {'appTitle': 'SaaS Live Title!'}
+        'en': {'appTitle': 'FlutterLocalisation Live Title!'}
       };
 
       // ACT & ASSERT
@@ -153,7 +155,7 @@ void main() {
             {},
             () => mockGenerated.appTitle,
           );
-          expect(result, 'SaaS Live Title!');
+          expect(result, 'FlutterLocalisation Live Title!');
         },
       );
     });
@@ -162,7 +164,7 @@ void main() {
         (tester) async {
       // ARRANGE
       mockService.overridesToReturn = {
-        'en': {'welcome': 'Live Welcome {name} from SaaS!'}
+        'en': {'welcome': 'Live Welcome {name} from FlutterLocalisation!'}
       };
 
       // ACT & ASSERT
@@ -176,7 +178,7 @@ void main() {
             {'name': 'Tester'},
             () => mockGenerated.welcome('Tester'),
           );
-          expect(result, 'Live Welcome Tester from SaaS!');
+          expect(result, 'Live Welcome Tester from FlutterLocalisation!');
         },
       );
     });

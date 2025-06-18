@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
 import 'package:flutter_localisation/src/icu_message_processor.dart';
 
-/// Main class that handles translation resolution with SaaS overrides.
+/// Main class that handles translation resolution with FlutterLocalisation overrides.
 ///
 /// This class is designed to be short-lived, created by `context.tr` when needed.
 /// It contains an internal cache for the ICUMessageProcessor to improve performance.
@@ -22,7 +22,7 @@ class Translator {
 
   /// The core translation method.
   ///
-  /// It first checks the SaaSTranslationService for an override. If one exists,
+  /// It first checks the FlutterLocalisation for an override. If one exists,
   /// it processes it using an optimized ICU message processor. Otherwise, it
   /// falls back to the standard generated translation.
   String translate(
@@ -35,18 +35,19 @@ class Translator {
 
     if (overrideTemplate != null) {
       // An override exists, process it efficiently.
-      return _processSaaSOverride(key, overrideTemplate, arguments);
+      return _processFlutterLocalisationOverride(
+          key, overrideTemplate, arguments);
     }
 
     // No override found, use the standard generated translation.
     return fallbackGenerator();
   }
 
-  /// Efficiently processes a SaaS override string.
+  /// Efficiently processes a FlutterLocalisation override string.
   ///
   /// It lazily creates and caches an ICUMessageProcessor instance for the current
   /// locale, avoiding repeated creation for multiple translations on the same screen.
-  String _processSaaSOverride(
+  String _processFlutterLocalisationOverride(
     String key,
     String template,
     Map<String, dynamic> args,
@@ -94,7 +95,7 @@ class Translator {
 
   void _log(String message) {
     if (service.isLoggingEnabled) {
-      debugPrint('[SaaSTranslator] $message');
+      debugPrint('[Translator] $message');
     }
   }
 

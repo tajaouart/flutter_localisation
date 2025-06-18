@@ -10,16 +10,13 @@ Future<void> main(List<String> args) async {
 
   if (args.length < 2) {
     _logger.severe(
-      'Usage: dart run flutter_localization <flavors-folder> <flavor-name> [--with-saas]\n'
-      'Both arguments are required.\n'
-      'Add --with-saas to also generate SaaS methods automatically.',
-    );
+        'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\n'
+        'Both arguments are required.');
     exit(1);
   }
 
   final flavorsFolder = args[0];
   final flavor = args[1];
-  final withSaas = args.contains('--with-saas');
   final l10nFile = File('l10n.yaml');
 
   _logger.info(
@@ -59,21 +56,15 @@ Future<void> main(List<String> args) async {
 
     _logger.info('Localization generation completed successfully.');
 
-    // ✅ NOUVEAU: Si --with-saas, lancer generate.dart automatiquement
-    if (withSaas) {
-      _logger.info('🎯 Starting SaaS methods generation...');
-      await _runSaaSGeneration();
-    } else {
-      _logger.info(
-          '💡 Tip: Add --with-saas to also generate SaaS methods automatically');
-    }
+    _logger.info('🎯 Starting FlutterLocalisation methods generation...');
+    await _runGeneration();
   } catch (e) {
     _logger.severe('An error occurred: $e');
     exit(1);
   }
 }
 
-Future<void> _runSaaSGeneration() async {
+Future<void> _runGeneration() async {
   try {
     // First, try the new approach with package executable
     _logger.info('🔧 Running: dart run flutter_localisation:generate');
@@ -86,11 +77,13 @@ Future<void> _runSaaSGeneration() async {
 
     // If package approach works, we're done
     if (packageResult.exitCode == 0) {
-      _logger.info('📤 SaaS generation stdout: ${packageResult.stdout}');
+      _logger.info(
+          '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}');
       if (packageResult.stderr.isNotEmpty) {
-        _logger.warning('📤 SaaS generation stderr: ${packageResult.stderr}');
+        _logger.warning(
+            '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}');
       }
-      _logger.info('✅ SaaS methods generated successfully!');
+      _logger.info('✅ FlutterLocalisation methods generated successfully!');
       return;
     }
 
@@ -116,43 +109,46 @@ Future<void> _runSaaSGeneration() async {
 
       if (generateScript == null) {
         _logger.warning(
-            '❌ SaaS generation script not found in any of these locations:');
+            '❌ FlutterLocalisation generation script not found in any of these locations:');
         for (final path in possiblePaths) {
           _logger.warning('   - $path');
         }
-        _logger.info(
-            '💡 Skipping SaaS method generation. Run "saas_generate" manually if needed.');
+        _logger.info('💡 Skipping FlutterLocalisation method generation.');
         return;
       }
 
-      _logger.info('📄 Found SaaS script: $generateScript');
+      _logger.info('📄 Found FlutterLocalisation script: $generateScript');
       _logger.info('🔧 Running: dart run $generateScript');
 
       final fileResult = await Process.run('dart', ['run', generateScript]);
 
-      _logger.info('📤 SaaS generation stdout: ${fileResult.stdout}');
+      _logger.info(
+          '📤 FlutterLocalisation generation stdout: ${fileResult.stdout}');
       if (fileResult.stderr.isNotEmpty) {
-        _logger.warning('📤 SaaS generation stderr: ${fileResult.stderr}');
+        _logger.warning(
+            '📤 FlutterLocalisation generation stderr: ${fileResult.stderr}');
       }
 
       if (fileResult.exitCode == 0) {
-        _logger.info('✅ SaaS methods generated successfully!');
+        _logger.info('✅ FlutterLocalisation methods generated successfully!');
       } else {
         _logger.severe(
-            '❌ SaaS generation failed with exit code: ${fileResult.exitCode}');
+            '❌ FlutterLocalisation generation failed with exit code: ${fileResult.exitCode}');
         _logger.severe('Error output: ${fileResult.stderr}');
         exit(1);
       }
     } else {
       // Package was found but failed for another reason
-      _logger.info('📤 SaaS generation stdout: ${packageResult.stdout}');
-      _logger.warning('📤 SaaS generation stderr: ${packageResult.stderr}');
+      _logger.info(
+          '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}');
+      _logger.warning(
+          '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}');
       _logger.severe(
-          '❌ SaaS generation failed with exit code: ${packageResult.exitCode}');
+          '❌ FlutterLocalisation generation failed with exit code: ${packageResult.exitCode}');
       exit(1);
     }
   } catch (e) {
-    _logger.severe('💥 Exception during SaaS generation: $e');
+    _logger.severe('💥 Exception during FlutterLocalisation generation: $e');
     exit(1);
   }
 }

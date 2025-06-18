@@ -27,20 +27,20 @@ void main() {
       expect(result, equals('🛒 5 items'));
     });
 
-    test('should handle complex SaaS ICU template', () {
+    test('should handle complex FlutterLocalisation ICU template', () {
       const template =
-          '{count, plural, =0{🛒 SaaS: No items in cart} =1{🛒 SaaS: 1 amazing item} other{🛒 SaaS: {count} amazing items}}';
+          '{count, plural, =0{🛒 FlutterLocalisation: No items in cart} =1{🛒 FlutterLocalisation: 1 amazing item} other{🛒 FlutterLocalisation: {count} amazing items}}';
       final result = processICUPlural(template, {'count': 10});
 
-      expect(result, equals('🛒 SaaS: 10 amazing items'));
+      expect(result, equals('🛒 FlutterLocalisation: 10 amazing items'));
     });
 
-    test('should handle Spanish SaaS ICU template', () {
+    test('should handle Spanish FlutterLocalisation ICU template', () {
       const template =
-          '{count, plural, =0{🛒 SaaS: Sin artículos en carrito} =1{🛒 SaaS: 1 artículo increíble} other{🛒 SaaS: {count} artículos increíbles}}';
+          '{count, plural, =0{🛒 FlutterLocalisation: Sin artículos en carrito} =1{🛒 FlutterLocalisation: 1 artículo increíble} other{🛒 FlutterLocalisation: {count} artículos increíbles}}';
       final result = processICUPlural(template, {'count': 3});
 
-      expect(result, equals('🛒 SaaS: 3 artículos increíbles'));
+      expect(result, equals('🛒 FlutterLocalisation: 3 artículos increíbles'));
     });
 
     test('should handle nested placeholders', () {

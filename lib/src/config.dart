@@ -1,4 +1,4 @@
-/// Configuration for SaaS translation service behavior
+/// Configuration for FlutterLocalisation translation service behavior
 class TranslationConfig {
   /// The flavor name (e.g., 'default', 'premium')
   final String? flavorName;
