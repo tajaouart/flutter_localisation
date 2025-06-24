@@ -10,30 +10,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 class TranslationService {
   final TranslationConfig _config;
   final http.Client _httpClient;
+  final ApiRepository _repository; // This can now be final, which is better
 
-  late final ApiRepository _repository;
   late final CacheManager _cache;
-
   bool _loadingStates = false;
   bool _initialized = false;
-
   late final SharedPreferences prefs;
-
-  // Add embedded timestamp from generated code
-  String? _embeddedArbTimestamp;
+  final String? _embeddedArbTimestamp;
 
   TranslationService({
     final TranslationConfig? config,
     final http.Client? httpClient,
     final String? embeddedArbTimestamp,
+    final ApiRepository? repository,
   })  : _config = config ?? const TranslationConfig(),
         _httpClient = httpClient ?? http.Client(),
-        _embeddedArbTimestamp = embeddedArbTimestamp {
-    _repository = ApiRepository(_config, _httpClient);
-  }
+        _embeddedArbTimestamp = embeddedArbTimestamp,
+        _repository = repository ??
+            ApiRepository(
+              config ?? const TranslationConfig(),
+              httpClient ?? http.Client(),
+            );
 
   /// Initialize service - call this once at app start.
-  Future<void> initialize() async {
+  Future<void> initialize({final bool fetchUpdatesOnStart = true}) async {
     if (_initialized) return;
     _log('Initializing...');
 
@@ -49,7 +49,9 @@ class TranslationService {
 
     _initialized = true;
 
-    _checkForUpdatesAllLocales();
+    if (fetchUpdatesOnStart) {
+      _checkForUpdatesAllLocales();
+    }
   }
 
   /// Compare embedded ARB timestamp with cache and clear if embedded is newer
@@ -60,24 +62,24 @@ class TranslationService {
     }
 
     try {
-      final DateTime embeddedTime = DateTime.parse(_embeddedArbTimestamp!);
+      final DateTime embeddedTime = DateTime.parse(_embeddedArbTimestamp);
       final String lastCacheUpdate = _cache.lastCacheUpdateTime;
 
       if (lastCacheUpdate.isEmpty) {
         _log('No previous cache timestamp found.');
-        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp!);
+        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp);
         return;
       }
 
       _log('Embedded ARB timestamp: $_embeddedArbTimestamp');
-      _log('Last cache update: ${lastCacheUpdate}');
+      _log('Last cache update: $lastCacheUpdate');
 
       if (embeddedTime.isAfter(DateTime.parse(lastCacheUpdate).toUtc())) {
         _log(
           'Embedded ARB is newer than cache - clearing cache due to app update.',
         );
         await _cache.clearAll();
-        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp!);
+        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp);
         _log('Cache cleared and timestamp updated.');
       } else {
         _log('Cache is up to date with embedded ARB.');
@@ -137,7 +139,7 @@ class TranslationService {
 
     try {
       // Get current timestamp
-      final String currentTimestamp = await _cache.lastCacheUpdateTime;
+      final String currentTimestamp = _cache.lastCacheUpdateTime;
       _log('Checking for updates from timestamp $currentTimestamp...');
 
       final Map<String, dynamic>? updateData =

@@ -44,15 +44,20 @@ Future<void> main(final List<String> args) async {
     }
 
     _logger.info(
-        'Found ARB files: ${arbFiles.map((final File f) => f.path).join(', ')}');
+      'Found ARB files: ${arbFiles.map((final File f) => f.path).join(', ')}',
+    );
 
     // Run the flutter gen-l10n command to generate localization
     final ProcessResult result =
         await Process.run('flutter', <String>['gen-l10n']);
-    _logger.info('Flutter gen-l10n output:\n${result.stdout}');
 
-    if (result.stderr.isNotEmpty) {
-      _logger.severe('Error during localization generation: ${result.stderr}');
+    final String stdoutStr = result.stdout as String;
+    final String stderrStr = result.stderr as String;
+
+    _logger.info('Flutter gen-l10n output:\n$stdoutStr');
+
+    if (stderrStr.isNotEmpty) {
+      _logger.severe('Error during localization generation: $stderrStr');
       exit(1);
     }
 
@@ -60,7 +65,7 @@ Future<void> main(final List<String> args) async {
 
     _logger.info('🎯 Starting FlutterLocalisation methods generation...');
     await _runGeneration();
-  } catch (e) {
+  } on Exception catch (e) {
     _logger.severe('An error occurred: $e');
     exit(1);
   }
@@ -79,13 +84,12 @@ Future<void> _runGeneration() async {
 
     // If package approach works, we're done
     if (packageResult.exitCode == 0) {
-      _logger.info(
-        '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}',
-      );
-      if (packageResult.stderr.isNotEmpty) {
-        _logger.warning(
-          '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}',
-        );
+      final String stdoutStr = packageResult.stdout as String;
+      final String stderrStr = packageResult.stderr as String;
+
+      _logger.info('📤 FlutterLocalisation generation stdout: $stdoutStr');
+      if (stderrStr.isNotEmpty) {
+        _logger.warning('📤 FlutterLocalisation generation stderr: $stderrStr');
       }
       _logger.info('✅ FlutterLocalisation methods generated successfully!');
       return;
@@ -131,7 +135,7 @@ Future<void> _runGeneration() async {
       _logger.info(
         '📤 FlutterLocalisation generation stdout: ${fileResult.stdout}',
       );
-      if (fileResult.stderr.isNotEmpty) {
+      if (fileResult.stderr.toString().isNotEmpty) {
         _logger.warning(
           '📤 FlutterLocalisation generation stderr: ${fileResult.stderr}',
         );

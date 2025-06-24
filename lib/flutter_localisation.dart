@@ -1,4 +1,4 @@
-library flutter_localisation;
+library;
 
 export 'src/api/extensions.dart';
 export 'src/api/translator.dart';

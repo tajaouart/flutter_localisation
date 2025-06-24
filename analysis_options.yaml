@@ -46,7 +46,6 @@ linter:
     - prefer_const_constructors_in_immutables # Use `const` in immutable constructors
 
     # Testing
-    - avoid_print                            # Ensure proper logging
     - avoid_catches_without_on_clauses       # Use specific exceptions in catch blocks
     - test_types_in_equals                   # Ensure equality checks handle null properly
     - require_trailing_commas

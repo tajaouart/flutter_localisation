@@ -56,7 +56,7 @@ void main() {
         expect(cacheManager.memoryCache.containsKey('en'), isTrue);
         expect(cacheManager.localTimestamps['en'], enVersion);
         expect(cacheManager.memoryCache.containsKey('fr'), isFalse);
-        expect(await mockPrefs.getString('flutter_trans_fr'), isNull);
+        expect(mockPrefs.getString('flutter_trans_fr'), isNull);
       });
 
       test(

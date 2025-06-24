@@ -5,17 +5,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 // Mock generated localizations for testing
 class MockAppLocalizations {
-  static const supportedLocales = [Locale('en'), Locale('es')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('es'),
+  ];
 
-  String hello(String name) => 'Hello $name!';
+  String hello(final String name) => 'Hello $name!';
 
-  String welcomeMessage(String username) => 'Welcome back, $username!';
+  String welcomeMessage(final String username) => 'Welcome back, $username!';
 
   String get appTitle => 'Test App';
 
   String get simpleGreeting => 'Good morning!';
 
-  String itemsInCart(int count) {
+  String itemsInCart(final int count) {
     if (count == 0) return 'No items';
     if (count == 1) return '1 item';
     return '$count items';
@@ -28,9 +31,12 @@ class TestFlutterLocalisationTranslationService extends TranslationService {
       <String, Map<String, String>>{};
   bool _testCacheLoaded = false;
 
-  void setTestOverrides(String locale, Map<String, String> overrides) {
+  void setTestOverrides(
+    final String locale,
+    final Map<String, String> overrides,
+  ) {
     _testOverrides[locale] = overrides;
-    _testCacheLoaded = true; // Mark cache as loaded when setting overrides
+    _testCacheLoaded = true;
   }
 
   void setCacheLoaded(final bool loaded) {
@@ -53,7 +59,7 @@ class TestFlutterLocalisationTranslationService extends TranslationService {
   Map<String, int> getCacheStatus() {
     return _testOverrides.map(
       (final String locale, final Map<String, String> overrides) {
-        return MapEntry(locale, overrides.length);
+        return MapEntry<String, int>(locale, overrides.length);
       },
     );
   }
@@ -126,7 +132,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            localizationsDelegates: const <LocalizationsDelegate>[
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
@@ -163,7 +169,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            localizationsDelegates: const <LocalizationsDelegate>[
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
@@ -412,7 +418,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            localizationsDelegates: const <LocalizationsDelegate>[
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,

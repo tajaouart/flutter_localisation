@@ -13,19 +13,19 @@ class TranslationProvider extends InheritedWidget {
     super.key,
   });
 
-  static TranslationProvider of(BuildContext context) {
-    final result =
+  static TranslationProvider of(final BuildContext context) {
+    final TranslationProvider? result =
         context.dependOnInheritedWidgetOfExactType<TranslationProvider>();
     assert(result != null, 'TranslationProvider not found in widget tree.');
     return result!;
   }
 
-  static TranslationProvider? maybeOf(BuildContext context) {
+  static TranslationProvider? maybeOf(final BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<TranslationProvider>();
   }
 
   @override
-  bool updateShouldNotify(TranslationProvider oldWidget) {
+  bool updateShouldNotify(final TranslationProvider oldWidget) {
     // Rebuild widgets that depend on this provider if the service or localizations change.
     return service != oldWidget.service ||
         generatedLocalizations != oldWidget.generatedLocalizations;

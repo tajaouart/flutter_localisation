@@ -87,11 +87,26 @@ class ICUMessageProcessor {
   }
 
   Map<String, dynamic>? getPlaceholderMetadata(final String messageKey) {
+    final String key = '@$messageKey';
+
     // Check runtime metadata first
-    if (_runtimeMetadata?.containsKey('@$messageKey') == true) {
-      return _runtimeMetadata!['@$messageKey']?['placeholders'];
+    final Object? runtimeEntry = _runtimeMetadata?[key];
+    if (runtimeEntry is Map<String, dynamic>) {
+      final Object? placeholders = runtimeEntry['placeholders'];
+      if (placeholders is Map<String, dynamic>) {
+        return placeholders;
+      }
     }
-    return _messageMetadata['@$messageKey']?['placeholders'];
+
+    final Object? defaultEntry = _messageMetadata[key];
+    if (defaultEntry is Map<String, dynamic>) {
+      final Object? placeholders = defaultEntry['placeholders'];
+      if (placeholders is Map<String, dynamic>) {
+        return placeholders;
+      }
+    }
+
+    return null;
   }
 
   String? _findSelectorVariable(final String template) {
@@ -125,8 +140,8 @@ class ICUMessageProcessor {
     String? twoCase = _extractIcuCaseValue(template, '=2');
     if (twoCase.isEmpty) twoCase = _extractIcuCaseValue(template, 'two');
 
-    final String? fewCase = _extractIcuCaseValue(template, 'few');
-    final String? manyCase = _extractIcuCaseValue(template, 'many');
+    final String fewCase = _extractIcuCaseValue(template, 'few');
+    final String manyCase = _extractIcuCaseValue(template, 'many');
     final String arbOtherCase = _extractIcuCaseValue(template, 'other');
 
     final String fallbackOther = '{$pluralVar} items (fallback)';
@@ -136,8 +151,8 @@ class ICUMessageProcessor {
       zero: zeroCase.isNotEmpty == true ? zeroCase : null,
       one: oneCase.isNotEmpty == true ? oneCase : null,
       two: twoCase.isNotEmpty == true ? twoCase : null,
-      few: fewCase?.isNotEmpty == true ? fewCase : null,
-      many: manyCase?.isNotEmpty == true ? manyCase : null,
+      few: fewCase.isNotEmpty == true ? fewCase : null,
+      many: manyCase.isNotEmpty == true ? manyCase : null,
       other: arbOtherCase.isNotEmpty ? arbOtherCase : fallbackOther,
       name: key,
       locale: locale.toString(),
@@ -220,7 +235,7 @@ class ICUMessageProcessor {
                   } else {
                     stringValue = value.toString();
                   }
-                } catch (e) {
+                } on Exception catch (_) {
                   stringValue = formattingErrorDefault;
                 }
               } else {

@@ -26,7 +26,7 @@ class CacheManager {
 
           final String? timestamp = _prefs.getString('flutter_version_$locale');
           localTimestamps[locale] = timestamp ?? '';
-        } on Exception catch (e) {
+        } on Exception catch (_) {
           await clearLocale(locale);
         }
       }
@@ -64,7 +64,7 @@ class CacheManager {
     for (final String locale in locales) {
       await clearLocale(locale);
     }
-    _lastCacheUpdateTime = '';
+    setLastCacheUpdateTime('');
   }
 
   /// Get the last cache update timestamp from SharedPreferences
@@ -73,7 +73,7 @@ class CacheManager {
       _lastCacheUpdateTime =
           _prefs.getString('flutter_localisation_cache_timestamp') ?? '';
       return _lastCacheUpdateTime;
-    } catch (e) {
+    } on Exception catch (_) {
       return '';
     }
   }

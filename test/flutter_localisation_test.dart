@@ -10,7 +10,10 @@ void main() {
   late String projectRoot;
   late String scriptPath;
 
-  void _ensureInTestDirectory(String pathToCheck, String testDirPath) {
+  void ensureInTestDirectory(
+    final String pathToCheck,
+    final String testDirPath,
+  ) {
     if (!pathToCheck.contains('flutter_localisation_test_')) {
       throw Exception(
         '🚨 SÉCURITÉ: Tentative d\'opération sur un chemin non-test: $pathToCheck',
@@ -39,11 +42,15 @@ void main() {
     }
 
     // 🛡️ GARDE-FOU: Créer un dossier temporaire TRÈS spécifique
-    final tempDir = Directory.systemTemp;
-    final randomId = Random().nextInt(999999);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    testDir = Directory(path.join(
-        tempDir.path, 'SAFE_flutter_localisation_test_${randomId}_$timestamp'));
+    final Directory tempDir = Directory.systemTemp;
+    final int randomId = Random().nextInt(999999);
+    final int timestamp = DateTime.now().millisecondsSinceEpoch;
+    testDir = Directory(
+      path.join(
+        tempDir.path,
+        'SAFE_flutter_localisation_test_${randomId}_$timestamp',
+      ),
+    );
     await testDir.create(recursive: true);
 
     // 🛡️ GARDE-FOU: Vérifier qu'on est bien dans un dossier temporaire
@@ -55,9 +62,6 @@ void main() {
     if (testDir.path.contains(projectRoot)) {
       throw Exception('🚨 SÉCURITÉ: testDir est dans le projet! Danger!');
     }
-
-    print('🛡️  SÉCURISÉ: Tests running in: ${testDir.path}');
-    print('📄 Script path: $scriptPath');
   });
 
   tearDown(() async {
@@ -67,15 +71,15 @@ void main() {
     }
 
     // Nettoyer le pubspec.yaml de test
-    final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
+    final File pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
     if (await pubspecFile.exists()) {
       await pubspecFile.delete();
     }
 
     // 🛡️ SÉCURISÉ: Nettoyer les scripts mock avec validation
-    final binDir = Directory(path.join(testDir.path, 'bin'));
+    final Directory binDir = Directory(path.join(testDir.path, 'bin'));
     if (await binDir.exists()) {
-      _ensureInTestDirectory(
+      ensureInTestDirectory(
         binDir.path,
         testDir.path,
       ); // ← AJOUTEZ cette ligne
@@ -83,9 +87,9 @@ void main() {
     }
 
     // 🛡️ SÉCURISÉ: Nettoyer le lib/ avec validation
-    final testLibDir = Directory(path.join(testDir.path, 'lib'));
+    final Directory testLibDir = Directory(path.join(testDir.path, 'lib'));
     if (await testLibDir.exists()) {
-      _ensureInTestDirectory(
+      ensureInTestDirectory(
         testLibDir.path,
         testDir.path,
       ); // ← AJOUTEZ cette ligne
@@ -109,14 +113,13 @@ void main() {
       }
 
       await testDir.delete(recursive: true);
-      print('🧹 SÉCURISÉ: Cleaned up test directory: ${testDir.path}');
     }
   });
 
   setUp(() async {
     l10nFile = File(path.join(testDir.path, 'l10n.yaml'));
 
-    final pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
+    final File pubspecFile = File(path.join(testDir.path, 'pubspec.yaml'));
     await pubspecFile.writeAsString('''
 name: test_project
 version: 1.0.0
@@ -144,27 +147,26 @@ output-localization-file: app_localizations.dart
   });
 
   test('should update l10n.yaml with correct flavor', () async {
-    final flavor = 'test_flavor';
+    final String flavor = 'test_flavor';
 
     // Ensure the test flavor directory and ARB file exist
-    final dir = Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
+    final Directory dir =
+        Directory(path.join(testDir.path, 'lib/l10n/test_flavor'));
     await dir.create(recursive: true);
     await File(path.join(dir.path, 'app_en.arb')).writeAsString('{}');
 
     // Run the localization generator script
-    final result = await Process.run(
+    final ProcessResult result = await Process.run(
       'dart',
-      ['run', scriptPath, 'lib/l10n', flavor],
+      <String>['run', scriptPath, 'lib/l10n', flavor],
       workingDirectory: testDir.path,
     );
 
     // Ensure the script ran successfully
-    print('stdout: ${result.stdout}');
-    print('stderr: ${result.stderr}');
     expect(result.exitCode, 0, reason: result.stderr);
 
     // Read the updated content
-    final updatedContent = await l10nFile.readAsString();
+    final String updatedContent = await l10nFile.readAsString();
 
     // Check if the arb-dir was correctly updated
     expect(updatedContent.contains('arb-dir: lib/l10n/$flavor'), isTrue);
@@ -182,7 +184,7 @@ output-localization-file: app_localizations.dart
     expect(result.exitCode, isNot(0));
 
     // Check if the updated error message was logged
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr;
     expect(
       output,
       contains(
@@ -190,7 +192,7 @@ output-localization-file: app_localizations.dart
       ),
     );
   });
-/*
+
   test('should handle missing generate.dart script gracefully', () async {
     final String flavor = 'test_flavor';
 
@@ -206,8 +208,8 @@ output-localization-file: app_localizations.dart
       workingDirectory: testDir.path,
     );
 
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
     expect(
       result.exitCode,
       0,
@@ -259,8 +261,8 @@ void main() {
       workingDirectory: testDir.path,
     );
 
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
     expect(result.exitCode, 0, reason: result.stderr);
 
     // Check FlutterLocalisation generation was executed
@@ -311,8 +313,8 @@ void main() {
       workingDirectory: testDir.path,
     );
 
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
     expect(
       result.exitCode,
       1,
@@ -367,8 +369,8 @@ void main() {
     );
 
     // Log stdout and stderr for debugging
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
 
     // Ensure the script exits with an error
     expect(result.exitCode, isNot(0));
@@ -403,8 +405,8 @@ void main() {
     );
 
     // Ensure the script ran successfully
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
     expect(result.exitCode, 0, reason: result.stderr);
 
     // Check if l10n.yaml was created
@@ -452,9 +454,9 @@ void main() {
     );
 
     // Log stdout and stderr for debugging
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
-    debugPrint('Exit Code: ${result.exitCode}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    print('Exit Code: ${result.exitCode}');
 
     // Verify the script exits with an error
     expect(
@@ -496,7 +498,7 @@ void main() {
     await l10nFile.writeAsString('arb-dir: lib/l10n/$initialFlavor');
 
     // Log the initial content for debugging
-    debugPrint('Initial l10n.yaml content: ${await l10nFile.readAsString()}');
+    print('Initial l10n.yaml content: ${await l10nFile.readAsString()}');
 
     // Run the script for the new flavor
     final ProcessResult result = await Process.run(
@@ -506,9 +508,9 @@ void main() {
     );
 
     // Log stdout, stderr, and exit code for debugging
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
-    debugPrint('Exit Code: ${result.exitCode}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
+    print('Exit Code: ${result.exitCode}');
 
     // Verify the script ran successfully
     expect(
@@ -519,7 +521,7 @@ void main() {
 
     // Verify the l10n.yaml file has been updated with the new flavor
     final String updatedContent = await l10nFile.readAsString();
-    debugPrint('Updated l10n.yaml content: $updatedContent');
+    print('Updated l10n.yaml content: $updatedContent');
     expect(
       updatedContent,
       contains('arb-dir: lib/l10n/$newFlavor'),
@@ -582,8 +584,8 @@ void main() {
     );
 
     // Ensure the script ran successfully
-    debugPrint('stdout: ${result.stdout}');
-    debugPrint('stderr: ${result.stderr}');
+    print('stdout: ${result.stdout}');
+    print('stderr: ${result.stderr}');
     expect(result.exitCode, 0, reason: result.stderr);
 
     // Read the updated l10n.yaml content
@@ -695,8 +697,8 @@ output-localization-file: app_localizations.dart
       );
 
       // Verify script ran successfully
-      debugPrint('stdout: ${result.stdout}');
-      debugPrint('stderr: ${result.stderr}');
+      print('stdout: ${result.stdout}');
+      print('stderr: ${result.stderr}');
       expect(result.exitCode, 0, reason: 'Script execution failed.');
 
       // Verify Spanish and English localization files exist
@@ -1050,7 +1052,6 @@ extension GeneratedTranslationMethods on Translator {
       );
     });
   });
-  */
 }
 
 Future<void> _setReadOnly(final File file, final bool readOnly) async {

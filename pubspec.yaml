@@ -13,12 +13,15 @@ dependencies:
   http:
   intl:
   shared_preferences:
+  mockito:
+  path:
   flutter_localizations:
     sdk: flutter
 
 
 dev_dependencies:
   test: ^1.16.0
+  lints:
   flutter_test:
     sdk: flutter
 

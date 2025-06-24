@@ -184,7 +184,7 @@ String processICUPlural(
     }
 
     return result;
-  } catch (error) {
+  } on Exception catch (_) {
     return template;
   }
 }

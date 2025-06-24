@@ -78,7 +78,7 @@ void main() {
       const String clientVersion = '2025-06-18T14:00:00Z';
       final MockClient mockClient =
           MockClient((final http.Request request) async {
-        final body = jsonDecode(request.body);
+        final Map<String, dynamic> body = jsonDecode(request.body);
         expect(body['current_timestamp'], clientVersion);
 
         return http.Response(

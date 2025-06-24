@@ -295,10 +295,11 @@ class FlutterTranslationGenerator {
       if (arbFiles.isEmpty) return null;
 
       final String arbContent = await arbFiles.first.readAsString();
-      final arbData = jsonDecode(arbContent);
-
-      final dynamic ts = arbData['@@last_modified'];
-      return (ts is String) ? ts : null;
+      final Map<String, dynamic> arbData = jsonDecode(arbContent);
+      final Object? lastModifiedRaw = arbData['@@last_modified'];
+      final String? lastModified =
+          (lastModifiedRaw is String) ? lastModifiedRaw : null;
+      return lastModified;
     } on Exception catch (e) {
       debugPrint('Warning: Could not extract ARB timestamp: $e');
       return null;
