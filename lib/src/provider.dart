@@ -1,7 +1,5 @@
-// lib/src/provider.dart
-import 'package:flutter/widgets.dart';
-
-import 'service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localisation/flutter_localisation.dart';
 
 /// Provider that makes the TranslationService available throughout the widget tree.
 class TranslationProvider extends InheritedWidget {
@@ -9,10 +7,10 @@ class TranslationProvider extends InheritedWidget {
   final dynamic generatedLocalizations;
 
   const TranslationProvider({
-    super.key,
     required this.service,
     required this.generatedLocalizations,
     required super.child,
+    super.key,
   });
 
   static TranslationProvider of(BuildContext context) {

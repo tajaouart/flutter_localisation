@@ -6,7 +6,7 @@ extension FlutterLocalisationExtension on BuildContext {
   /// Access the main translator for handling enhanced localizations.
   /// Usage: `context.tr.translate('my_key', ...)`
   Translator get tr {
-    final provider = TranslationProvider.of(this);
+    final TranslationProvider provider = TranslationProvider.of(this);
     return Translator(
       context: this,
       service: provider.service,

@@ -1,0 +1,52 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  plugins:
+    - custom_lint
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "**/*.gen.dart"
+  errors:
+    invalid_annotation_target: ignore
+    missing_required_param: warning
+    unused_local_variable: warning
+    unused_import: warning
+    dead_code: warning
+
+linter:
+  rules:
+    # Code Consistency and Readability
+    - always_declare_return_types            # Ensure return types are explicit
+    - prefer_single_quotes                   # Use single quotes for strings
+    - prefer_final_locals                    # Use `final` for variables that don't change
+    - prefer_final_parameters                # Use `final` for parameters where applicable
+    - sort_child_properties_last             # Improve widget readability
+    - always_put_required_named_parameters_first # Improve readability of function parameters
+
+    # Imports
+    - always_use_package_imports             # Use package imports instead of relative imports
+    # Note: Removed 'prefer_relative_imports' due to incompatibility
+
+    # Type Safety
+    - always_specify_types                   # Explicitly declare variable types
+    - avoid_dynamic_calls                    # Avoid runtime type issues
+
+    # Performance Optimization
+    - avoid_redundant_argument_values        # Clean up redundant arguments
+    - avoid_unnecessary_containers           # Avoid unnecessary widget nesting
+
+    # Null Safety
+    - avoid_init_to_null                     # Avoid redundant null initializations
+
+    # Code Style
+    - prefer_const_constructors              # Use `const` constructors where possible
+    - prefer_const_literals_to_create_immutables # Use immutable literals where possible
+    - prefer_const_constructors_in_immutables # Use `const` in immutable constructors
+
+    # Testing
+    - avoid_print                            # Ensure proper logging
+    - avoid_catches_without_on_clauses       # Use specific exceptions in catch blocks
+    - test_types_in_equals                   # Ensure equality checks handle null properly
+    - require_trailing_commas

@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 
 final Logger _logger = Logger('LocalizationGenerator');
 
-Future<void> main(List<String> args) async {
+Future<void> main(final List<String> args) async {
   _setupLogging();
 
   if (args.length < 2) {
@@ -15,9 +15,9 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  final flavorsFolder = args[0];
-  final flavor = args[1];
-  final l10nFile = File('l10n.yaml');
+  final String flavorsFolder = args[0];
+  final String flavor = args[1];
+  final File l10nFile = File('l10n.yaml');
 
   _logger.info(
     'Generating localization files for flavor: $flavor, using flavors folder: $flavorsFolder',
@@ -25,7 +25,7 @@ Future<void> main(List<String> args) async {
 
   try {
     // Validate the flavor folder exists
-    final flavorDirectory = Directory('$flavorsFolder/$flavor');
+    final Directory flavorDirectory = Directory('$flavorsFolder/$flavor');
     if (!await flavorDirectory.exists()) {
       _logger.severe('Invalid flavor folder: $flavorsFolder/$flavor');
       exit(1);
@@ -35,7 +35,7 @@ Future<void> main(List<String> args) async {
     await _ensureL10nFile(l10nFile, flavorsFolder, flavor);
 
     // Validate ARB files exist in the flavor directory
-    final arbFiles = await _getArbFiles(flavorDirectory);
+    final List<File> arbFiles = await _getArbFiles(flavorDirectory);
     if (arbFiles.isEmpty) {
       _logger.severe(
         'No ARB files found in flavor folder: $flavorsFolder/$flavor',
@@ -43,10 +43,12 @@ Future<void> main(List<String> args) async {
       exit(1);
     }
 
-    _logger.info('Found ARB files: ${arbFiles.map((f) => f.path).join(', ')}');
+    _logger.info(
+        'Found ARB files: ${arbFiles.map((final File f) => f.path).join(', ')}');
 
     // Run the flutter gen-l10n command to generate localization
-    final result = await Process.run('flutter', ['gen-l10n']);
+    final ProcessResult result =
+        await Process.run('flutter', <String>['gen-l10n']);
     _logger.info('Flutter gen-l10n output:\n${result.stdout}');
 
     if (result.stderr.isNotEmpty) {
@@ -69,19 +71,21 @@ Future<void> _runGeneration() async {
     // First, try the new approach with package executable
     _logger.info('🔧 Running: dart run flutter_localisation:generate');
 
-    final packageResult = await Process.run(
+    final ProcessResult packageResult = await Process.run(
       'dart',
-      ['run', 'flutter_localisation:generate'],
+      <String>['run', 'flutter_localisation:generate'],
       workingDirectory: _findProjectRoot() ?? Directory.current.path,
     );
 
     // If package approach works, we're done
     if (packageResult.exitCode == 0) {
       _logger.info(
-          '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}');
+        '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}',
+      );
       if (packageResult.stderr.isNotEmpty) {
         _logger.warning(
-            '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}');
+          '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}',
+        );
       }
       _logger.info('✅ FlutterLocalisation methods generated successfully!');
       return;
@@ -93,14 +97,14 @@ Future<void> _runGeneration() async {
           .info('Package executable not found, trying direct file approach...');
 
       // Use the old working code
-      final possiblePaths = [
+      final List<String> possiblePaths = <String>[
         'bin/generate.dart',
         '../bin/generate.dart',
         'packages/flutter_localisation/bin/generate.dart',
       ];
 
       String? generateScript;
-      for (final path in possiblePaths) {
+      for (final String path in possiblePaths) {
         if (await File(path).exists()) {
           generateScript = path;
           break;
@@ -109,8 +113,9 @@ Future<void> _runGeneration() async {
 
       if (generateScript == null) {
         _logger.warning(
-            '❌ FlutterLocalisation generation script not found in any of these locations:');
-        for (final path in possiblePaths) {
+          '❌ FlutterLocalisation generation script not found in any of these locations:',
+        );
+        for (final String path in possiblePaths) {
           _logger.warning('   - $path');
         }
         _logger.info('💡 Skipping FlutterLocalisation method generation.');
@@ -120,44 +125,51 @@ Future<void> _runGeneration() async {
       _logger.info('📄 Found FlutterLocalisation script: $generateScript');
       _logger.info('🔧 Running: dart run $generateScript');
 
-      final fileResult = await Process.run('dart', ['run', generateScript]);
+      final ProcessResult fileResult =
+          await Process.run('dart', <String>['run', generateScript]);
 
       _logger.info(
-          '📤 FlutterLocalisation generation stdout: ${fileResult.stdout}');
+        '📤 FlutterLocalisation generation stdout: ${fileResult.stdout}',
+      );
       if (fileResult.stderr.isNotEmpty) {
         _logger.warning(
-            '📤 FlutterLocalisation generation stderr: ${fileResult.stderr}');
+          '📤 FlutterLocalisation generation stderr: ${fileResult.stderr}',
+        );
       }
 
       if (fileResult.exitCode == 0) {
         _logger.info('✅ FlutterLocalisation methods generated successfully!');
       } else {
         _logger.severe(
-            '❌ FlutterLocalisation generation failed with exit code: ${fileResult.exitCode}');
+          '❌ FlutterLocalisation generation failed with exit code: ${fileResult.exitCode}',
+        );
         _logger.severe('Error output: ${fileResult.stderr}');
         exit(1);
       }
     } else {
       // Package was found but failed for another reason
       _logger.info(
-          '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}');
+        '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}',
+      );
       _logger.warning(
-          '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}');
+        '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}',
+      );
       _logger.severe(
-          '❌ FlutterLocalisation generation failed with exit code: ${packageResult.exitCode}');
+        '❌ FlutterLocalisation generation failed with exit code: ${packageResult.exitCode}',
+      );
       exit(1);
     }
-  } catch (e) {
+  } on Exception catch (e) {
     _logger.severe('💥 Exception during FlutterLocalisation generation: $e');
     exit(1);
   }
 }
 
 String? _findProjectRoot() {
-  var directory = Directory.current;
+  Directory directory = Directory.current;
 
   while (directory.path != directory.parent.path) {
-    final pubspecFile = File(path.join(directory.path, 'pubspec.yaml'));
+    final File pubspecFile = File(path.join(directory.path, 'pubspec.yaml'));
     if (pubspecFile.existsSync()) {
       return directory.path;
     }
@@ -167,9 +179,9 @@ String? _findProjectRoot() {
 }
 
 Future<void> _ensureL10nFile(
-  File l10nFile,
-  String flavorsFolder,
-  String flavor,
+  final File l10nFile,
+  final String flavorsFolder,
+  final String flavor,
 ) async {
   if (!await l10nFile.exists()) {
     _logger.info('l10n.yaml does not exist. Creating a new one.');
@@ -177,19 +189,18 @@ Future<void> _ensureL10nFile(
 arb-dir: $flavorsFolder/$flavor
 output-dir: lib/localization/generated
 output-localization-file: app_localizations.dart
-synthetic-package: false
 nullable-getter: false
 use-escaping: true
 ''');
     return;
   }
 
-  final l10nContent = await l10nFile.readAsString();
+  final String l10nContent = await l10nFile.readAsString();
   _logger.info('Original l10n.yaml content:\n$l10nContent');
 
-  final updatedContent = l10nContent.replaceFirstMapped(
+  final String updatedContent = l10nContent.replaceFirstMapped(
     RegExp(r'arb-dir:.*'),
-    (match) =>
+    (final Match match) =>
         'arb-dir: ${flavorsFolder.replaceAll(RegExp(r'/$'), '')}/$flavor',
   );
 
@@ -198,18 +209,18 @@ use-escaping: true
   _logger.info('l10n.yaml file updated successfully.');
 }
 
-Future<List<File>> _getArbFiles(Directory flavorDirectory) async {
+Future<List<File>> _getArbFiles(final Directory flavorDirectory) async {
   // List all files in the directory and filter for .arb files
-  final files = await flavorDirectory.list(recursive: false).toList();
+  final List<FileSystemEntity> files = await flavorDirectory.list().toList();
   return files
       .whereType<File>()
-      .where((file) => file.path.endsWith('.arb'))
+      .where((final File file) => file.path.endsWith('.arb'))
       .toList();
 }
 
 void _setupLogging() {
   Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen((record) {
+  Logger.root.onRecord.listen((final LogRecord record) {
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
 }

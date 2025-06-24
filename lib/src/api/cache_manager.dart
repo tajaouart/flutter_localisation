@@ -5,57 +5,84 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheManager {
   final SharedPreferences _prefs;
-  final Map<String, Map<String, String>> memoryCache = {};
-  final Map<String, String> localVersions = {};
+  final Map<String, Map<String, String>> memoryCache =
+      <String, Map<String, String>>{};
+  final Map<String, String> localTimestamps = <String, String>{};
+  String _lastCacheUpdateTime = '';
+
+  String get lastCacheUpdateTime => _lastCacheUpdateTime;
 
   CacheManager(this._prefs);
 
   /// Loads all data from SharedPreferences into the in-memory cache.
-  Future<void> load(List<String> supportedLocales) async {
-    for (final locale in supportedLocales) {
-      final cachedJson = _prefs.getString('flutter_trans_$locale');
+  Future<void> load(final List<String> supportedLocales) async {
+    for (final String locale in supportedLocales) {
+      final String? cachedJson = _prefs.getString('flutter_trans_$locale');
 
       if (cachedJson != null) {
         try {
           memoryCache[locale] =
               Map<String, String>.from(jsonDecode(cachedJson));
 
-          // Get the version, and if it's missing (null), default to an empty string.
-          final version = _prefs.getString('flutter_version_$locale');
-          localVersions[locale] = version ?? '';
-        } catch (e) {
-          // Handle potential corruption of cached data.
+          final String? timestamp = _prefs.getString('flutter_version_$locale');
+          localTimestamps[locale] = timestamp ?? '';
+        } on Exception catch (e) {
           await clearLocale(locale);
         }
       }
     }
+
+    _lastCacheUpdateTime = await _getLastCacheUpdateTime();
   }
 
-  /// Saves new translations and version for a specific locale.
+  /// Saves new translations and timestamp for a specific locale.
   Future<void> save(
-    String locale,
-    Map<String, String> translations,
-    String version,
+    final String locale,
+    final Map<String, String> translations,
+    final String timestamp,
   ) async {
     memoryCache[locale] = translations;
-    localVersions[locale] = version;
+    localTimestamps[locale] = timestamp;
     await _prefs.setString('flutter_trans_$locale', jsonEncode(translations));
-    await _prefs.setString('flutter_version_$locale', version);
+    await _prefs.setString('flutter_version_$locale', timestamp);
+    await setLastCacheUpdateTime(timestamp);
   }
 
   /// Clears all data for a specific locale.
-  Future<void> clearLocale(String locale) async {
+  Future<void> clearLocale(final String locale) async {
     memoryCache.remove(locale);
-    localVersions.remove(locale);
+    localTimestamps.remove(locale);
     await _prefs.remove('flutter_trans_$locale');
     await _prefs.remove('flutter_version_$locale');
+    _lastCacheUpdateTime = '';
   }
 
   /// Clears all cached data for all locales.
   Future<void> clearAll() async {
-    final locales = memoryCache.keys.toList();
-    for (final locale in locales) {
+    final List<String> locales = memoryCache.keys.toList();
+    localTimestamps.clear();
+    for (final String locale in locales) {
       await clearLocale(locale);
     }
+    _lastCacheUpdateTime = '';
+  }
+
+  /// Get the last cache update timestamp from SharedPreferences
+  Future<String> _getLastCacheUpdateTime() async {
+    try {
+      _lastCacheUpdateTime =
+          _prefs.getString('flutter_localisation_cache_timestamp') ?? '';
+      return _lastCacheUpdateTime;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  Future<void> setLastCacheUpdateTime(final String timestamp) async {
+    await _prefs.setString(
+      'flutter_localisation_cache_timestamp',
+      timestamp,
+    );
+    await _getLastCacheUpdateTime();
   }
 }

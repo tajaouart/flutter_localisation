@@ -29,13 +29,10 @@ class TranslationConfig {
 
   /// Factory constructor for free users (no API access)
   factory TranslationConfig.freeUser({
-    List<String>? supportedLocales,
-    bool enableLogging = false,
+    final List<String>? supportedLocales,
+    final bool enableLogging = false,
   }) {
     return TranslationConfig(
-      secretKey: null,
-      flavorName: null,
-      projectId: null,
       supportedLocales: supportedLocales,
       enableLogging: enableLogging,
     );
@@ -43,15 +40,15 @@ class TranslationConfig {
 
   /// Factory constructor for paid users with API access
   factory TranslationConfig.paidUser({
-    required String secretKey,
-    required String flavorName,
-    required int projectId,
-    String apiBaseUrl = 'http://localhost:8000',
-    Duration apiTimeout = const Duration(seconds: 10),
-    List<String>? supportedLocales,
-    bool enableLogging = true,
-    bool throwOnError = false,
-    Duration? backgroundCheckInterval,
+    required final String secretKey,
+    required final String flavorName,
+    required final int projectId,
+    final String apiBaseUrl = 'http://localhost:8000',
+    final Duration apiTimeout = const Duration(seconds: 10),
+    final List<String>? supportedLocales,
+    final bool enableLogging = true,
+    final bool throwOnError = false,
+    final Duration? backgroundCheckInterval,
   }) {
     return TranslationConfig(
       secretKey: secretKey,

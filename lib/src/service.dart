@@ -3,10 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localisation/src/api/api_repository.dart';
 import 'package:flutter_localisation/src/api/cache_manager.dart';
+import 'package:flutter_localisation/src/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'config.dart';
 
 class TranslationService {
   final TranslationConfig _config;
@@ -15,14 +14,21 @@ class TranslationService {
   late final ApiRepository _repository;
   late final CacheManager _cache;
 
-  final Map<String, bool> _loadingStates = {};
+  bool _loadingStates = false;
   bool _initialized = false;
 
+  late final SharedPreferences prefs;
+
+  // Add embedded timestamp from generated code
+  String? _embeddedArbTimestamp;
+
   TranslationService({
-    TranslationConfig? config,
-    http.Client? httpClient,
+    final TranslationConfig? config,
+    final http.Client? httpClient,
+    final String? embeddedArbTimestamp,
   })  : _config = config ?? const TranslationConfig(),
-        _httpClient = httpClient ?? http.Client() {
+        _httpClient = httpClient ?? http.Client(),
+        _embeddedArbTimestamp = embeddedArbTimestamp {
     _repository = ApiRepository(_config, _httpClient);
   }
 
@@ -31,18 +37,57 @@ class TranslationService {
     if (_initialized) return;
     _log('Initializing...');
 
-    final prefs = await SharedPreferences.getInstance();
+    prefs = await SharedPreferences.getInstance();
     _cache = CacheManager(prefs);
 
-    await _cache.load(_config.supportedLocales ?? []);
+    await _cache.load(_config.supportedLocales ?? <String>[]);
     _log(
       'Cache loaded with keys for locales: ${_cache.memoryCache.keys.join(', ')}',
     );
+
+    await _checkEmbeddedTimestampAndClearCache();
 
     _initialized = true;
 
     _checkForUpdatesAllLocales();
   }
+
+  /// Compare embedded ARB timestamp with cache and clear if embedded is newer
+  Future<void> _checkEmbeddedTimestampAndClearCache() async {
+    if (_embeddedArbTimestamp == null) {
+      _log('No embedded ARB timestamp available, skipping timestamp check.');
+      return;
+    }
+
+    try {
+      final DateTime embeddedTime = DateTime.parse(_embeddedArbTimestamp!);
+      final String lastCacheUpdate = _cache.lastCacheUpdateTime;
+
+      if (lastCacheUpdate.isEmpty) {
+        _log('No previous cache timestamp found.');
+        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp!);
+        return;
+      }
+
+      _log('Embedded ARB timestamp: $_embeddedArbTimestamp');
+      _log('Last cache update: ${lastCacheUpdate}');
+
+      if (embeddedTime.isAfter(DateTime.parse(lastCacheUpdate).toUtc())) {
+        _log(
+          'Embedded ARB is newer than cache - clearing cache due to app update.',
+        );
+        await _cache.clearAll();
+        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp!);
+        _log('Cache cleared and timestamp updated.');
+      } else {
+        _log('Cache is up to date with embedded ARB.');
+      }
+    } on Exception catch (e) {
+      _log('Error parsing embedded ARB timestamp: $e');
+    }
+  }
+
+  /// Set the last cache update timestamp in SharedPreferences
 
   /// Clean up resources, like the HTTP client.
   void dispose() {
@@ -55,85 +100,105 @@ class TranslationService {
   bool get isApiConfigured =>
       _config.secretKey != null && _config.projectId != null;
 
-  String? getOverride(String locale, String key) =>
+  String? getOverride(final String locale, final String key) =>
       _cache.memoryCache[locale]?[key];
 
-  bool hasOverride(String locale, String key) =>
+  bool hasOverride(final String locale, final String key) =>
       _cache.memoryCache[locale]?.containsKey(key) ?? false;
 
-  Map<String, int> getCacheStatus() =>
-      _cache.memoryCache.map((key, value) => MapEntry(key, value.length));
+  Map<String, int> getCacheStatus() => _cache.memoryCache.map(
+        (final String key, final Map<String, String> value) {
+          return MapEntry<String, int>(key, value.length);
+        },
+      );
 
   Future<void> clearCache() async {
     await _cache.clearAll();
     _log('Cache cleared.');
   }
 
-  Future<void> refresh(String locale) async {
+  Future<void> refresh() async {
     if (!isApiConfigured) {
       _log('Cannot refresh - API not configured.');
       return;
     }
-    await _fetchAndApplyUpdates(locale, forceRefresh: true);
+    await _fetchAndApplyUpdates(forceRefresh: true);
   }
 
   void _checkForUpdatesAllLocales() {
-    final locales = _config.supportedLocales ?? [];
-    for (final locale in locales) {
-      _fetchAndApplyUpdates(locale).catchError((e) {
-        _log('Background update failed for $locale: $e');
-      });
-    }
+    _fetchAndApplyUpdates().catchError((final dynamic e) {
+      _log('Background update failed $e');
+    });
   }
 
-  Future<void> _fetchAndApplyUpdates(
-    String locale, {
-    bool forceRefresh = false,
-  }) async {
-    if (_loadingStates[locale] == true && !forceRefresh) return;
-    _loadingStates[locale] = true;
+  Future<void> _fetchAndApplyUpdates({final bool forceRefresh = false}) async {
+    if (_loadingStates == true && !forceRefresh) return;
+    _loadingStates = true;
 
     try {
-      final currentVersion = _cache.localVersions[locale] ?? "";
-      _log('Checking for updates for $locale from version $currentVersion...');
+      // Get current timestamp
+      final String currentTimestamp = await _cache.lastCacheUpdateTime;
+      _log('Checking for updates from timestamp $currentTimestamp...');
 
-      final updateData = await _repository.fetchUpdates(currentVersion);
+      final Map<String, dynamic>? updateData =
+          await _repository.fetchUpdates(currentTimestamp);
 
       if (updateData == null || updateData['has_updates'] != true) {
-        _log('No new updates for $locale.');
+        _log('No new updates');
         return;
       }
 
-      final newVersion = updateData['version'] as String;
-      final allTranslations =
+      final String newTimestamp = updateData['last_modified'] as String;
+      final Map<String, dynamic>? allTranslations =
           updateData['translations'] as Map<String, dynamic>?;
 
-      final newTranslations = Map<String, String>.from(
-        allTranslations?[locale] as Map? ?? {},
-      );
+      if (allTranslations == null || allTranslations.isEmpty) {
+        _log('No translations in update');
+        return;
+      }
 
-      if (newTranslations.isNotEmpty) {
-        await _cache.save(locale, newTranslations, newVersion);
+      // Process each locale in the response
+      int totalUpdated = 0;
+      for (final MapEntry<String, dynamic> entry in allTranslations.entries) {
+        final String locale = entry.key;
+        final Map<String, String> localeTranslations =
+            Map<String, String>.from(entry.value as Map<String, String>);
+
+        if (localeTranslations.isNotEmpty) {
+          await _cache.save(locale, localeTranslations, newTimestamp);
+          totalUpdated += localeTranslations.length;
+          _log(
+            'Updated $locale with ${localeTranslations.length} translations',
+          );
+        }
+      }
+
+      if (totalUpdated > 0) {
         _log(
-          'Successfully updated $locale to version $newVersion with ${newTranslations.length} keys.',
+          'Successfully updated to timestamp $newTimestamp with $totalUpdated total translations.',
         );
       }
-    } catch (e) {
-      _log('Error during update process for $locale: $e');
+    } on Exception catch (e) {
+      _log('Error during update process: $e');
     } finally {
-      _loadingStates[locale] = false;
+      _loadingStates = false;
     }
   }
 
-  void _log(String message) {
+  void _log(final String message) {
     if (_config.enableLogging) {
       debugPrint('[FlutterLocalisation] $message');
     }
   }
 
-  Map<String, String> getAllOverridesForLocale(String locale) {
-    return Map<String, String>.from(_cache.memoryCache[locale] ?? {});
+  Map<String, String> getAllOverridesForLocale(final String locale) {
+    return Map<String, String>.from(
+      _cache.memoryCache[locale] ?? <dynamic, dynamic>{},
+    );
   }
 
   bool get isLoggingEnabled => _config.enableLogging;
+
+  /// Get the embedded ARB timestamp
+  String? get embeddedArbTimestamp => _embeddedArbTimestamp;
 }
