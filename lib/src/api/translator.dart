@@ -100,7 +100,7 @@ class Translator {
 
   void _log(final String message) {
     if (service.isLoggingEnabled) {
-      debugPrint('[Translator] $message');
+      print('[Translator] $message');
     }
   }
 

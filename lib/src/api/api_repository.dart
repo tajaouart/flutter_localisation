@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
 import 'package:http/http.dart' as http;
 
@@ -71,7 +70,7 @@ class ApiRepository {
 
   void _logError(final String message) {
     if (_config.enableLogging) {
-      debugPrint('[FlutterLocalisation] ERROR: $message');
+      print('[FlutterLocalisation] ERROR: $message');
     }
   }
 }

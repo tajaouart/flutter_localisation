@@ -138,7 +138,6 @@ class TranslationService {
     _loadingStates = true;
 
     try {
-      // Get current timestamp
       final String currentTimestamp = _cache.lastCacheUpdateTime;
       _log('Checking for updates from timestamp $currentTimestamp...');
 
@@ -159,12 +158,16 @@ class TranslationService {
         return;
       }
 
-      // Process each locale in the response
       int totalUpdated = 0;
       for (final MapEntry<String, dynamic> entry in allTranslations.entries) {
         final String locale = entry.key;
-        final Map<String, String> localeTranslations =
-            Map<String, String>.from(entry.value as Map<String, String>);
+
+        final Map<String, String> localeTranslations = <String, String>{
+          for (MapEntry<String, dynamic> item
+              in (entry.value as Map<String, dynamic>).entries)
+            if (!item.key.startsWith('@') && item.value is String)
+              item.key: item.value,
+        };
 
         if (localeTranslations.isNotEmpty) {
           await _cache.save(locale, localeTranslations, newTimestamp);

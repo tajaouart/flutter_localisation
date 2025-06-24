@@ -1,17 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-
 void main(final List<String> args) async {
-  debugPrint('🚀 FlutterLocalisation Translations Generator');
+  print('🚀 FlutterLocalisation Translations Generator');
 
   try {
     final FlutterTranslationGenerator generator = FlutterTranslationGenerator();
     await generator.generate();
-    debugPrint('✅ Generation completed successfully!');
+    print('✅ Generation completed successfully!');
   } on Exception catch (error) {
-    debugPrint('❌ Error: $error');
+    print('❌ Error: $error');
     exit(1);
   }
 }
@@ -25,13 +23,13 @@ class FlutterTranslationGenerator {
     _findProjectRoot();
     _detectPaths();
 
-    debugPrint('📁 Project: $_projectRoot');
-    debugPrint('📄 Input: $_localizationsPath');
-    debugPrint('📝 Output: $_outputPath');
+    print('📁 Project: $_projectRoot');
+    print('📄 Input: $_localizationsPath');
+    print('📝 Output: $_outputPath');
 
     // Extract ARB timestamp
     final String? arbTimestamp = await _extractArbTimestamp();
-    debugPrint('📅 ARB Timestamp: $arbTimestamp');
+    print('📅 ARB Timestamp: $arbTimestamp');
 
     final String content = await _readLocalizationsFile();
     final List<TranslationMethod> methods = _extractMethods(content);
@@ -45,9 +43,9 @@ class FlutterTranslationGenerator {
     final String generatedCode = _generateCode(methods, arbTimestamp);
     await _writeGeneratedFile(generatedCode);
 
-    debugPrint('✅ Generated ${methods.length} translation methods:');
+    print('✅ Generated ${methods.length} translation methods:');
     for (final TranslationMethod method in methods) {
-      debugPrint('   ✓ ${method.name}${method.isGetter ? ' (getter)' : ''}');
+      print('   ✓ ${method.name}${method.isGetter ? ' (getter)' : ''}');
     }
   }
 
@@ -210,7 +208,9 @@ class FlutterTranslationGenerator {
     buffer.writeln();
     buffer
         .writeln('/// Timestamp of embedded ARB files used during generation');
-    buffer.writeln("const String embeddedArbTimestamp = '$arbTimestamp';");
+    buffer.writeln(
+      "const String embeddedArbTimestamp = '${arbTimestamp ?? ''}';",
+    );
     buffer.writeln();
 
     buffer.writeln(
@@ -301,7 +301,7 @@ class FlutterTranslationGenerator {
           (lastModifiedRaw is String) ? lastModifiedRaw : null;
       return lastModified;
     } on Exception catch (e) {
-      debugPrint('Warning: Could not extract ARB timestamp: $e');
+      print('Warning: Could not extract ARB timestamp: $e');
       return null;
     }
   }

@@ -217,7 +217,7 @@ output-localization-file: app_localizations.dart
     );
 
     // Check FlutterLocalisation generation was attempted but skipped
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr.toString();
     expect(
       output,
       contains('🎯 Starting FlutterLocalisation methods generation...'),
@@ -266,7 +266,7 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
 
     // Check FlutterLocalisation generation was executed
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr.toString();
     expect(
       output,
       contains('🎯 Starting FlutterLocalisation methods generation...'),
@@ -322,7 +322,7 @@ void main() {
     );
 
     // Check error handling
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr.toString();
     expect(
       output,
       contains('🎯 Starting FlutterLocalisation methods generation...'),
@@ -345,7 +345,7 @@ void main() {
     expect(result.exitCode, isNot(0));
 
     // Check if the error message was logged
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr.toString();
     expect(
       output,
       contains(
@@ -376,7 +376,7 @@ void main() {
     expect(result.exitCode, isNot(0));
 
     // Check if the error message was logged
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr.toString();
     expect(output, contains('Invalid flavor folder: lib/l10n/test_flavor'));
 
     // Clean up
@@ -466,7 +466,7 @@ void main() {
     );
 
     // Verify error message contains the invalid folder
-    final output = result.stdout + result.stderr;
+    final String output = result.stdout.toString() + result.stderr.toString();
     expect(
       output,
       contains('Invalid flavor folder: lib/l10n/$invalidFlavor'),
@@ -775,7 +775,7 @@ void main() {
         reason: 'Should complete successfully with working script',
       );
 
-      final output = result.stdout + result.stderr;
+      final String output = result.stdout.toString() + result.stderr.toString();
       expect(
         output,
         contains('🎯 Starting FlutterLocalisation methods generation...'),
@@ -876,7 +876,7 @@ void main() async {
       );
 
       expect(result.exitCode, 0);
-      final output = result.stdout + result.stderr;
+      final String output = result.stdout.toString() + result.stderr.toString();
       expect(output, contains('📅 Extracted ARB timestamp: $testTimestamp'));
     });
 
@@ -938,7 +938,7 @@ void main() async {
       );
 
       expect(result.exitCode, 0);
-      final output = result.stdout + result.stderr;
+      final String output = result.stdout.toString() + result.stderr.toString();
       expect(output, contains('📅 ARB timestamp (defaulted):'));
     });
 

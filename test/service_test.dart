@@ -221,6 +221,97 @@ void main() {
       expect(service.embeddedArbTimestamp, null);
       expect(service.getCacheStatus(), isEmpty);
     });
+
+    test('handles an API update with multiple, diverse locales simultaneously',
+        () async {
+      // ARRANGE: Define a list of diverse locales and an API timestamp
+      const String apiTimestamp = '2025-09-15T10:00:00Z';
+      final List<String> locales = <String>[
+        'en',
+        'es',
+        'ar',
+        'zh',
+      ];
+
+      late final MockApiRepository mockRepository = MockApiRepository();
+
+      // Programmatically build the 'translations' map for the mock API response
+      // This creates a unique greeting for each language.
+      final Map<String, dynamic> apiTranslations = <String, dynamic>{
+        for (String locale in locales)
+          locale: <String, String>{
+            'greeting': 'Hello in $locale',
+            'app_title': 'App Title $locale',
+          },
+      };
+
+      final Map<String, Object> mockApiResponse = <String, Object>{
+        'has_updates': true,
+        'last_modified': apiTimestamp,
+        'translations': apiTranslations,
+      };
+
+      // Configure the mock repository to return this multi-language data
+      when(mockRepository.fetchUpdates(any))
+          .thenAnswer((final _) async => mockApiResponse);
+
+      // Initialize the service with all the languages we expect to support
+      service = TranslationService(
+        config: TranslationConfig(
+          supportedLocales: locales,
+          // Tell the service to load all these locales
+          projectId: 99,
+          secretKey: 'multi-language-key',
+        ),
+        repository: mockRepository,
+      );
+      await service.initialize(fetchUpdatesOnStart: false);
+
+      // ACT: Trigger a single refresh to process the multi-language response
+      await service.refresh();
+
+      // ASSERT: Verify that all locales were processed and cached correctly
+      final Map<String, int> cacheStatus = service.getCacheStatus();
+      expect(
+        cacheStatus.length,
+        locales.length,
+        reason:
+            'Cache should contain an entry for every locale in the response.',
+      );
+
+      // Loop through each locale to verify its data was saved correctly
+      for (final String locale in locales) {
+        // 1. Check the in-memory cache via getOverride
+        expect(
+          service.getOverride(locale, 'greeting'),
+          'Hello in $locale',
+          reason: 'In-memory cache for $locale greeting should be correct.',
+        );
+
+        // 2. Check the persistent storage (SharedPreferences)
+        final String? prefsData = prefs.getString('flutter_trans_$locale');
+        expect(
+          prefsData,
+          isNotNull,
+          reason: 'SharedPreferences data for $locale should not be null.',
+        );
+        expect(prefsData, contains('Hello in $locale'));
+
+        // 3. Check the per-locale timestamp
+        final String? versionData = prefs.getString('flutter_version_$locale');
+        expect(
+          versionData,
+          apiTimestamp,
+          reason: 'Version timestamp for $locale should be updated.',
+        );
+      }
+
+      // Finally, check that the global timestamp was also updated
+      expect(
+        prefs.getString('flutter_localisation_cache_timestamp'),
+        apiTimestamp,
+      );
+    });
   });
 
   group('Integration Tests', () {
