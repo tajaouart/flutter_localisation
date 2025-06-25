@@ -24,3 +24,6 @@
 
 ## 1.0.3
 - Updated ReadMe & example app.
+
+## 2.0.0
+- Support Live update feature.
