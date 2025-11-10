@@ -82,5 +82,92 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 90)),
     );
+
+    test('should log that it skips git pull when arbs folder is not a git repo',
+        () async {
+      // ACT: Run the script on the example project (which doesn't have git in arbs)
+      final ProcessResult result = await Process.run(
+        'dart',
+        <String>['run', scriptPath, 'arbs', 'usa'],
+        workingDirectory: exampleDir.path,
+      );
+
+      // ASSERT: Check that the output mentions skipping git pull
+      final String output = result.stdout.toString();
+      expect(
+        output,
+        contains('is not a Git repository. Skipping git pull'),
+        reason: 'Should log that git pull is skipped for non-git folders',
+      );
+      expect(result.exitCode, 0);
+    });
+
+    test(
+        'should attempt git pull when arbs folder is a git repo',
+        () async {
+          // ARRANGE: Create a temporary git repo for testing
+          final Directory tempDir = await Directory.systemTemp.createTemp(
+            'flutter_localisation_test_',
+          );
+          final Directory arbsDir =
+              Directory(path.join(tempDir.path, 'arbs'));
+          await arbsDir.create();
+
+          // Initialize git repo in arbs folder
+          await Process.run('git', <String>['init'], workingDirectory: arbsDir.path);
+          await Process.run(
+            'git',
+            <String>['config', 'user.email', 'test@example.com'],
+            workingDirectory: arbsDir.path,
+          );
+          await Process.run(
+            'git',
+            <String>['config', 'user.name', 'Test User'],
+            workingDirectory: arbsDir.path,
+          );
+
+          // Create a flavor directory with a dummy ARB file
+          final Directory flavorDir = Directory(path.join(arbsDir.path, 'test'));
+          await flavorDir.create();
+          final File arbFile = File(path.join(flavorDir.path, 'app_en.arb'));
+          await arbFile.writeAsString('{"@@locale": "en", "test": "Test"}');
+
+          // Commit the ARB file
+          await Process.run(
+            'git',
+            <String>['add', '.'],
+            workingDirectory: arbsDir.path,
+          );
+          await Process.run(
+            'git',
+            <String>['commit', '-m', 'Initial commit'],
+            workingDirectory: arbsDir.path,
+          );
+
+          // ACT: Run the CLI tool
+          final ProcessResult result = await Process.run(
+            'dart',
+            <String>['run', scriptPath, 'arbs', 'test'],
+            workingDirectory: tempDir.path,
+          );
+
+          // ASSERT: Check that git pull was attempted
+          final String output = result.stdout.toString();
+          expect(
+            output,
+            contains('Pulling latest changes from Git'),
+            reason: 'Should attempt git pull when arbs folder is a git repo',
+          );
+          // Git pull will fail due to no tracking branch, but should continue gracefully
+          expect(
+            output,
+            contains('Continuing with current ARB files'),
+            reason: 'Should continue after git pull failure',
+          );
+
+          // Clean up
+          await tempDir.delete(recursive: true);
+        },
+        timeout: const Timeout(Duration(seconds: 90)));
   });
 }

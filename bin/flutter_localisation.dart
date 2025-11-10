@@ -24,6 +24,9 @@ Future<void> main(final List<String> args) async {
   );
 
   try {
+    // Pull latest changes from Git if the flavors folder is a Git repository
+    await _pullLatestChanges(flavorsFolder);
+
     // Validate the flavor folder exists
     final Directory flavorDirectory = Directory('$flavorsFolder/$flavor');
     if (!await flavorDirectory.exists()) {
@@ -119,7 +122,8 @@ Future<void> _runGeneration() async {
 
     if (packageResult.exitCode == 0) {
       _logger.info(
-          '✅ FlutterLocalisation methods generated successfully via package!');
+        '✅ FlutterLocalisation methods generated successfully via package!',
+      );
       return;
     }
 
@@ -161,45 +165,57 @@ Future<void> _runGeneration() async {
 
             if (result.exitCode == 0) {
               _logger.info(
-                  '✅ FlutterLocalisation methods generated successfully!');
+                '✅ FlutterLocalisation methods generated successfully!',
+              );
               return;
             } else {
               _logger.warning('⚠️ Generate script failed: ${result.stderr}');
             }
           }
         }
-      } catch (e) {
+      } on Exception catch (e) {
         _logger.warning('Could not parse package config: $e');
       }
     }
 
     // Method 4 (Previously 3): Look in pub cache
     _logger.info('🔍 Looking in pub cache...');
-    final String? pubCachePath = Platform.environment['PUB_CACHE'] ??
+    final String pubCachePath = Platform.environment['PUB_CACHE'] ??
         (Platform.isWindows
             ? path.join(Platform.environment['APPDATA']!, 'Pub', 'Cache')
             : path.join(Platform.environment['HOME']!, '.pub-cache'));
 
-    if (pubCachePath != null) {
+    // Remove the null check since pubCachePath is always non-null
+    final Directory hostedDir =
+        Directory(path.join(pubCachePath, 'hosted', 'pub.dev'));
+    if (hostedDir.existsSync()) {
       final Directory hostedDir =
           Directory(path.join(pubCachePath, 'hosted', 'pub.dev'));
       if (hostedDir.existsSync()) {
         final List<FileSystemEntity> packages = hostedDir
             .listSync()
-            .where((entity) =>
-                path.basename(entity.path).startsWith('flutter_localisation-'))
+            .where(
+              (final FileSystemEntity entity) => path
+                  .basename(entity.path)
+                  .startsWith('flutter_localisation-'),
+            )
             .toList();
 
         if (packages.isNotEmpty) {
           // Sort to get the latest version
-          packages.sort((a, b) => b.path.compareTo(a.path));
+          packages.sort(
+            (final FileSystemEntity a, final FileSystemEntity b) {
+              return b.path.compareTo(a.path);
+            },
+          );
           final String packagePath = packages.first.path;
           final String generateScriptPath =
               path.join(packagePath, 'bin', 'generate.dart');
 
           if (File(generateScriptPath).existsSync()) {
             _logger.info(
-                '📄 Found generate script in pub cache: $generateScriptPath');
+              '📄 Found generate script in pub cache: $generateScriptPath',
+            );
 
             final ProcessResult result = await Process.run(
               'dart',
@@ -209,7 +225,8 @@ Future<void> _runGeneration() async {
 
             if (result.exitCode == 0) {
               _logger.info(
-                  '✅ FlutterLocalisation methods generated successfully!');
+                '✅ FlutterLocalisation methods generated successfully!',
+              );
               return;
             }
           }
@@ -220,31 +237,71 @@ Future<void> _runGeneration() async {
     // If we get here, we couldn't find or run the generate script
     _logger.warning('⚠️ Could not find or run the generate.dart script.');
     _logger.warning(
-        'The package is installed but the generation script is not accessible.');
+      'The package is installed but the generation script is not accessible.',
+    );
     _logger
         .warning('This may happen if the package is not properly configured.');
     _logger.info(
-        '💡 The localization files have been generated, but the helper methods were not created.');
+      '💡 The localization files have been generated, but the helper methods were not created.',
+    );
     _logger.info('💡 You can manually run the generation script if needed.');
   } on Exception catch (e) {
     _logger.severe('💥 Exception during FlutterLocalisation generation: $e');
     // Don't exit here - the main localization was successful
     _logger.info(
-        '⚠️ Main localization was successful, continuing despite generation error.');
+      '⚠️ Main localization was successful, continuing despite generation error.',
+    );
   }
 }
 
-String? _findProjectRoot() {
-  Directory directory = Directory.current;
+Future<void> _pullLatestChanges(final String flavorsFolder) async {
+  final Directory arbsDirectory = Directory(flavorsFolder);
+  final Directory gitDirectory = Directory(path.join(flavorsFolder, '.git'));
 
-  while (directory.path != directory.parent.path) {
-    final File pubspecFile = File(path.join(directory.path, 'pubspec.yaml'));
-    if (pubspecFile.existsSync()) {
-      return directory.path;
-    }
-    directory = directory.parent;
+  // Check if the flavors folder exists
+  if (!await arbsDirectory.exists()) {
+    _logger.warning(
+      '⚠️ Flavors folder "$flavorsFolder" does not exist. Skipping git pull.',
+    );
+    return;
   }
-  return null;
+
+  // Check if it's a git repository
+  if (!await gitDirectory.exists()) {
+    _logger.info(
+      '📁 "$flavorsFolder" is not a Git repository. Skipping git pull.',
+    );
+    return;
+  }
+
+  _logger.info('🔄 Pulling latest changes from Git in "$flavorsFolder"...');
+
+  try {
+    final ProcessResult result = await Process.run(
+      'git',
+      <String>['pull'],
+      workingDirectory: arbsDirectory.path,
+    );
+
+    final String stdout = result.stdout as String;
+    final String stderr = result.stderr as String;
+
+    if (result.exitCode == 0) {
+      _logger.info('✅ Git pull successful!');
+      if (stdout.trim().isNotEmpty) {
+        _logger.info('Git output: ${stdout.trim()}');
+      }
+    } else {
+      _logger.warning('⚠️ Git pull failed with exit code ${result.exitCode}');
+      if (stderr.trim().isNotEmpty) {
+        _logger.warning('Error: ${stderr.trim()}');
+      }
+      _logger.info('Continuing with current ARB files...');
+    }
+  } on Exception catch (e) {
+    _logger.warning('⚠️ Failed to run git pull: $e');
+    _logger.info('Continuing with current ARB files...');
+  }
 }
 
 Future<void> _ensureL10nFile(

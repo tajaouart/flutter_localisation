@@ -213,23 +213,23 @@ When you need to update translations:
 
 1. Edit translations on the dashboard at flutterlocalisation.com
 2. Changes are automatically pushed to Git
-3. Pull the latest: `cd arbs && git pull`
-4. Regenerate code: `flutter_localisation arbs production`
-5. For paid plans with live updates, your app will fetch changes automatically on next launch
+3. Run: `flutter_localisation arbs production` (automatically pulls latest changes from Git)
+4. For paid plans with live updates, your app will fetch changes automatically on next launch
 
 ---
 
 ## Generate Localization After ARB Changes
 
-Whenever you update ARB files (locally or pulled from Git):
+Whenever you update ARB files:
 
 ```bash
 flutter_localisation arbs your_flavor_name
 ```
 
-This regenerates:
-- Standard Flutter localization files in `lib/localization/generated/`
-- Extension methods file at `lib/generated_translation_methods.dart`
+This command automatically:
+- Pulls latest changes from Git (if the ARB folder is a Git repository)
+- Regenerates standard Flutter localization files in `lib/localization/generated/`
+- Generates extension methods file at `lib/generated_translation_methods.dart`
 
 ---
 
