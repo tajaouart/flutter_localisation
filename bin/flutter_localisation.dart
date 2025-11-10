@@ -10,7 +10,7 @@ Future<void> main(final List<String> args) async {
 
   if (args.length < 2) {
     _logger.severe(
-        'Usage: dart run flutter_localization <flavors-folder> <flavor-name>\n'
+        'Usage: dart run flutter_localisation <flavors-folder> <flavor-name>\n'
         'Both arguments are required.');
     exit(1);
   }
@@ -44,7 +44,7 @@ Future<void> main(final List<String> args) async {
     }
 
     _logger.info(
-      'Found ARB files: ${arbFiles.map((final File f) => f.path).join(', ')}',
+      'Found ARB files: ${arbFiles.map((final File f) => path.basename(f.path)).join(', ')}',
     );
 
     // Run the flutter gen-l10n command to generate localization
@@ -56,7 +56,8 @@ Future<void> main(final List<String> args) async {
 
     _logger.info('Flutter gen-l10n output:\n$stdoutStr');
 
-    if (stderrStr.isNotEmpty) {
+    if (stderrStr.isNotEmpty &&
+        !stderrStr.contains('Because l10n.yaml exists')) {
       _logger.severe('Error during localization generation: $stderrStr');
       exit(1);
     }
@@ -73,99 +74,163 @@ Future<void> main(final List<String> args) async {
 
 Future<void> _runGeneration() async {
   try {
-    // First, try the new approach with package executable
-    _logger.info('🔧 Running: dart run flutter_localisation:generate');
+    // ==== CHANGE START: Prioritize local development paths ====
+    // Method 1 (Previously 4): Fallback to local paths (for development)
+    // This is now checked FIRST to allow local overrides and for testing.
+    _logger.info('🔍 Checking local development paths...');
+    final List<String> localPaths = <String>[
+      'bin/generate.dart',
+      '../bin/generate.dart',
+      'packages/flutter_localisation/bin/generate.dart',
+    ];
 
+    for (final String scriptPath in localPaths) {
+      if (File(scriptPath).existsSync()) {
+        _logger.info('📄 Found local generate script: $scriptPath');
+
+        final ProcessResult result = await Process.run(
+          'dart',
+          <String>[scriptPath], // Execute directly, not with 'run'
+          workingDirectory: Directory.current.path,
+        );
+
+        if (result.exitCode == 0) {
+          // Output the result so mock scripts' print statements appear
+          if (result.stdout.toString().isNotEmpty) {
+            print(result.stdout);
+          }
+          _logger.info('✅ FlutterLocalisation methods generated successfully!');
+          return; // Exit after successful local script execution
+        } else {
+          _logger.warning('⚠️ Local generate script failed: ${result.stderr}');
+          // We will now fall through to other methods if the local script fails.
+        }
+      }
+    }
+    // ==== CHANGE END ====
+
+    // Method 2 (Previously 1): Try as a package executable
+    _logger.info('📦 Attempting to run as package executable...');
     final ProcessResult packageResult = await Process.run(
       'dart',
       <String>['run', 'flutter_localisation:generate'],
-      workingDirectory: _findProjectRoot() ?? Directory.current.path,
+      workingDirectory: Directory.current.path,
     );
 
-    // If package approach works, we're done
     if (packageResult.exitCode == 0) {
-      final String stdoutStr = packageResult.stdout as String;
-      final String stderrStr = packageResult.stderr as String;
-
-      _logger.info('📤 FlutterLocalisation generation stdout: $stdoutStr');
-      if (stderrStr.isNotEmpty) {
-        _logger.warning('📤 FlutterLocalisation generation stderr: $stderrStr');
-      }
-      _logger.info('✅ FlutterLocalisation methods generated successfully!');
+      _logger.info(
+          '✅ FlutterLocalisation methods generated successfully via package!');
       return;
     }
 
-    // If package approach failed, fall back to the old file-based approach
-    if (packageResult.stderr.toString().contains('Could not find package')) {
-      _logger
-          .info('Package executable not found, trying direct file approach...');
+    // Method 3 (Previously 2): Try to find the package in .dart_tool/package_config.json
+    _logger.info('🔍 Looking for package in .dart_tool...');
+    final File packageConfig = File('.dart_tool/package_config.json');
+    if (packageConfig.existsSync()) {
+      try {
+        final String configContent = await packageConfig.readAsString();
+        // Simple regex to find flutter_localisation package path
+        final RegExp packagePathRegex = RegExp(
+          r'"name"\s*:\s*"flutter_localisation"[^}]*"rootUri"\s*:\s*"([^"]+)"',
+          multiLine: true,
+        );
+        final RegExpMatch? match = packagePathRegex.firstMatch(configContent);
 
-      // Use the old working code
-      final List<String> possiblePaths = <String>[
-        'bin/generate.dart',
-        '../bin/generate.dart',
-        'packages/flutter_localisation/bin/generate.dart',
-      ];
+        if (match != null) {
+          String packagePath = match.group(1)!;
+          // Handle file:// URIs
+          if (packagePath.startsWith('file://')) {
+            packagePath = packagePath.substring(7);
+          }
+          // Handle relative paths
+          if (packagePath.startsWith('../')) {
+            packagePath =
+                path.normalize(path.join(Directory.current.path, packagePath));
+          }
 
-      String? generateScript;
-      for (final String path in possiblePaths) {
-        if (await File(path).exists()) {
-          generateScript = path;
-          break;
+          final String generateScriptPath =
+              path.join(packagePath, 'bin', 'generate.dart');
+          if (File(generateScriptPath).existsSync()) {
+            _logger.info('📄 Found generate script at: $generateScriptPath');
+
+            final ProcessResult result = await Process.run(
+              'dart',
+              <String>['run', generateScriptPath],
+              workingDirectory: Directory.current.path,
+            );
+
+            if (result.exitCode == 0) {
+              _logger.info(
+                  '✅ FlutterLocalisation methods generated successfully!');
+              return;
+            } else {
+              _logger.warning('⚠️ Generate script failed: ${result.stderr}');
+            }
+          }
         }
+      } catch (e) {
+        _logger.warning('Could not parse package config: $e');
       }
-
-      if (generateScript == null) {
-        _logger.warning(
-          '❌ FlutterLocalisation generation script not found in any of these locations:',
-        );
-        for (final String path in possiblePaths) {
-          _logger.warning('   - $path');
-        }
-        _logger.info('💡 Skipping FlutterLocalisation method generation.');
-        return;
-      }
-
-      _logger.info('📄 Found FlutterLocalisation script: $generateScript');
-      _logger.info('🔧 Running: dart run $generateScript');
-
-      final ProcessResult fileResult =
-          await Process.run('dart', <String>['run', generateScript]);
-
-      _logger.info(
-        '📤 FlutterLocalisation generation stdout: ${fileResult.stdout}',
-      );
-      if (fileResult.stderr.toString().isNotEmpty) {
-        _logger.warning(
-          '📤 FlutterLocalisation generation stderr: ${fileResult.stderr}',
-        );
-      }
-
-      if (fileResult.exitCode == 0) {
-        _logger.info('✅ FlutterLocalisation methods generated successfully!');
-      } else {
-        _logger.severe(
-          '❌ FlutterLocalisation generation failed with exit code: ${fileResult.exitCode}',
-        );
-        _logger.severe('Error output: ${fileResult.stderr}');
-        exit(1);
-      }
-    } else {
-      // Package was found but failed for another reason
-      _logger.info(
-        '📤 FlutterLocalisation generation stdout: ${packageResult.stdout}',
-      );
-      _logger.warning(
-        '📤 FlutterLocalisation generation stderr: ${packageResult.stderr}',
-      );
-      _logger.severe(
-        '❌ FlutterLocalisation generation failed with exit code: ${packageResult.exitCode}',
-      );
-      exit(1);
     }
+
+    // Method 4 (Previously 3): Look in pub cache
+    _logger.info('🔍 Looking in pub cache...');
+    final String? pubCachePath = Platform.environment['PUB_CACHE'] ??
+        (Platform.isWindows
+            ? path.join(Platform.environment['APPDATA']!, 'Pub', 'Cache')
+            : path.join(Platform.environment['HOME']!, '.pub-cache'));
+
+    if (pubCachePath != null) {
+      final Directory hostedDir =
+          Directory(path.join(pubCachePath, 'hosted', 'pub.dev'));
+      if (hostedDir.existsSync()) {
+        final List<FileSystemEntity> packages = hostedDir
+            .listSync()
+            .where((entity) =>
+                path.basename(entity.path).startsWith('flutter_localisation-'))
+            .toList();
+
+        if (packages.isNotEmpty) {
+          // Sort to get the latest version
+          packages.sort((a, b) => b.path.compareTo(a.path));
+          final String packagePath = packages.first.path;
+          final String generateScriptPath =
+              path.join(packagePath, 'bin', 'generate.dart');
+
+          if (File(generateScriptPath).existsSync()) {
+            _logger.info(
+                '📄 Found generate script in pub cache: $generateScriptPath');
+
+            final ProcessResult result = await Process.run(
+              'dart',
+              <String>['run', generateScriptPath],
+              workingDirectory: Directory.current.path,
+            );
+
+            if (result.exitCode == 0) {
+              _logger.info(
+                  '✅ FlutterLocalisation methods generated successfully!');
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    // If we get here, we couldn't find or run the generate script
+    _logger.warning('⚠️ Could not find or run the generate.dart script.');
+    _logger.warning(
+        'The package is installed but the generation script is not accessible.');
+    _logger
+        .warning('This may happen if the package is not properly configured.');
+    _logger.info(
+        '💡 The localization files have been generated, but the helper methods were not created.');
+    _logger.info('💡 You can manually run the generation script if needed.');
   } on Exception catch (e) {
     _logger.severe('💥 Exception during FlutterLocalisation generation: $e');
-    exit(1);
+    // Don't exit here - the main localization was successful
+    _logger.info(
+        '⚠️ Main localization was successful, continuing despite generation error.');
   }
 }
 

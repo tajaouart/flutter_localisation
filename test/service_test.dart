@@ -21,6 +21,95 @@ class MockHttpClient extends http.BaseClient {
 }
 
 void main() {
+  group('Free User Tests (Without Initialize)', () {
+    late TranslationService service;
+    late MockHttpClient mockHttpClient;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      mockHttpClient = MockHttpClient();
+    });
+
+    tearDown(() {
+      service.dispose();
+    });
+
+    test('free user can use service without calling initialize()', () {
+      // ARRANGE & ACT
+      service = TranslationService(
+        config: TranslationConfig.freeUser(
+          supportedLocales: <String>['en', 'es'],
+          enableLogging: false,
+        ),
+        httpClient: mockHttpClient,
+      );
+
+      // ASSERT: Service should work without initialize() call
+      expect(service.getOverride('en', 'anyKey'), null);
+      expect(service.hasOverride('en', 'anyKey'), false);
+      expect(service.getCacheStatus(), isEmpty);
+      expect(service.getAllOverridesForLocale('en'), isEmpty);
+    });
+
+    test('free user clearCache does not crash without initialize()', () async {
+      // ARRANGE
+      service = TranslationService(
+        config: TranslationConfig.freeUser(),
+        httpClient: mockHttpClient,
+      );
+
+      // ACT & ASSERT: Should not throw
+      await expectLater(service.clearCache(), completes);
+    });
+
+    test('free user refresh does nothing without initialize()', () async {
+      // ARRANGE
+      service = TranslationService(
+        config: TranslationConfig.freeUser(),
+        httpClient: mockHttpClient,
+      );
+
+      // ACT & ASSERT: Should not throw or crash
+      await expectLater(service.refresh(), completes);
+    });
+
+    test('free user can call initialize() but it is optional', () async {
+      // ARRANGE
+      service = TranslationService(
+        config: TranslationConfig.freeUser(
+          supportedLocales: <String>['en', 'fr'],
+        ),
+        httpClient: mockHttpClient,
+      );
+
+      // ACT: Free user can optionally call initialize
+      await service.initialize();
+
+      // ASSERT: Service works the same way
+      expect(service.isReady, true);
+      expect(service.getOverride('en', 'anyKey'), null);
+      expect(service.getCacheStatus(), isEmpty);
+    });
+
+    test('free user without API credentials cannot fetch updates', () async {
+      // ARRANGE
+      service = TranslationService(
+        config: TranslationConfig.freeUser(
+          supportedLocales: <String>['en'],
+          enableLogging: false,
+        ),
+        httpClient: mockHttpClient,
+      );
+
+      // ACT: Try to refresh (should fail gracefully)
+      await service.refresh();
+
+      // ASSERT: No crash, cache stays empty
+      expect(service.getCacheStatus(), isEmpty);
+      expect(service.isApiConfigured, false);
+    });
+  });
+
   group('TranslationService Embedded Timestamp Tests', () {
     late SharedPreferences prefs;
     late TranslationService service;

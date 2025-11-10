@@ -12,10 +12,10 @@ class TranslationService {
   final http.Client _httpClient;
   final ApiRepository _repository; // This can now be final, which is better
 
-  late final CacheManager _cache;
+  CacheManager? _cache;
   bool _loadingStates = false;
   bool _initialized = false;
-  late final SharedPreferences prefs;
+  SharedPreferences? prefs;
   final String? _embeddedArbTimestamp;
 
   TranslationService({
@@ -38,11 +38,11 @@ class TranslationService {
     _log('Initializing...');
 
     prefs = await SharedPreferences.getInstance();
-    _cache = CacheManager(prefs);
+    _cache = CacheManager(prefs!);
 
-    await _cache.load(_config.supportedLocales ?? <String>[]);
+    await _cache!.load(_config.supportedLocales ?? <String>[]);
     _log(
-      'Cache loaded with keys for locales: ${_cache.memoryCache.keys.join(', ')}',
+      'Cache loaded with keys for locales: ${_cache!.memoryCache.keys.join(', ')}',
     );
 
     await _checkEmbeddedTimestampAndClearCache();
@@ -56,18 +56,18 @@ class TranslationService {
 
   /// Compare embedded ARB timestamp with cache and clear if embedded is newer
   Future<void> _checkEmbeddedTimestampAndClearCache() async {
-    if (_embeddedArbTimestamp == null) {
-      _log('No embedded ARB timestamp available, skipping timestamp check.');
+    if (_cache == null || _embeddedArbTimestamp == null) {
+      _log('No embedded ARB timestamp or cache available, skipping timestamp check.');
       return;
     }
 
     try {
       final DateTime embeddedTime = DateTime.parse(_embeddedArbTimestamp);
-      final String lastCacheUpdate = _cache.lastCacheUpdateTime;
+      final String lastCacheUpdate = _cache!.lastCacheUpdateTime;
 
       if (lastCacheUpdate.isEmpty) {
         _log('No previous cache timestamp found.');
-        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp);
+        await _cache!.setLastCacheUpdateTime(_embeddedArbTimestamp);
         return;
       }
 
@@ -78,8 +78,8 @@ class TranslationService {
         _log(
           'Embedded ARB is newer than cache - clearing cache due to app update.',
         );
-        await _cache.clearAll();
-        await _cache.setLastCacheUpdateTime(_embeddedArbTimestamp);
+        await _cache!.clearAll();
+        await _cache!.setLastCacheUpdateTime(_embeddedArbTimestamp);
         _log('Cache cleared and timestamp updated.');
       } else {
         _log('Cache is up to date with embedded ARB.');
@@ -103,19 +103,20 @@ class TranslationService {
       _config.secretKey != null && _config.projectId != null;
 
   String? getOverride(final String locale, final String key) =>
-      _cache.memoryCache[locale]?[key];
+      _cache?.memoryCache[locale]?[key];
 
   bool hasOverride(final String locale, final String key) =>
-      _cache.memoryCache[locale]?.containsKey(key) ?? false;
+      _cache?.memoryCache[locale]?.containsKey(key) ?? false;
 
-  Map<String, int> getCacheStatus() => _cache.memoryCache.map(
+  Map<String, int> getCacheStatus() => _cache?.memoryCache.map(
         (final String key, final Map<String, String> value) {
           return MapEntry<String, int>(key, value.length);
         },
-      );
+      ) ?? {};
 
   Future<void> clearCache() async {
-    await _cache.clearAll();
+    if (_cache == null) return;
+    await _cache!.clearAll();
     _log('Cache cleared.');
   }
 
@@ -134,11 +135,16 @@ class TranslationService {
   }
 
   Future<void> _fetchAndApplyUpdates({final bool forceRefresh = false}) async {
+    if (_cache == null) {
+      _log('Cannot fetch updates - cache not initialized. Call initialize() first.');
+      return;
+    }
+
     if (_loadingStates == true && !forceRefresh) return;
     _loadingStates = true;
 
     try {
-      final String currentTimestamp = _cache.lastCacheUpdateTime;
+      final String currentTimestamp = _cache!.lastCacheUpdateTime;
       _log('Checking for updates from timestamp $currentTimestamp...');
 
       final Map<String, dynamic>? updateData =
@@ -170,7 +176,7 @@ class TranslationService {
         };
 
         if (localeTranslations.isNotEmpty) {
-          await _cache.save(locale, localeTranslations, newTimestamp);
+          await _cache!.save(locale, localeTranslations, newTimestamp);
           totalUpdated += localeTranslations.length;
           _log(
             'Updated $locale with ${localeTranslations.length} translations',
@@ -198,7 +204,7 @@ class TranslationService {
 
   Map<String, String> getAllOverridesForLocale(final String locale) {
     return Map<String, String>.from(
-      _cache.memoryCache[locale] ?? <dynamic, dynamic>{},
+      _cache?.memoryCache[locale] ?? <dynamic, dynamic>{},
     );
   }
 
