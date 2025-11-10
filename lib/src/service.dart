@@ -57,7 +57,9 @@ class TranslationService {
   /// Compare embedded ARB timestamp with cache and clear if embedded is newer
   Future<void> _checkEmbeddedTimestampAndClearCache() async {
     if (_cache == null || _embeddedArbTimestamp == null) {
-      _log('No embedded ARB timestamp or cache available, skipping timestamp check.');
+      _log(
+        'No embedded ARB timestamp or cache available, skipping timestamp check.',
+      );
       return;
     }
 
@@ -108,11 +110,13 @@ class TranslationService {
   bool hasOverride(final String locale, final String key) =>
       _cache?.memoryCache[locale]?.containsKey(key) ?? false;
 
-  Map<String, int> getCacheStatus() => _cache?.memoryCache.map(
-        (final String key, final Map<String, String> value) {
-          return MapEntry<String, int>(key, value.length);
-        },
-      ) ?? {};
+  Map<String, int> getCacheStatus() => <String, int>{
+        ...?_cache?.memoryCache.map(
+          (final String key, final Map<String, String> value) {
+            return MapEntry<String, int>(key, value.length);
+          },
+        ),
+      };
 
   Future<void> clearCache() async {
     if (_cache == null) return;
@@ -136,7 +140,9 @@ class TranslationService {
 
   Future<void> _fetchAndApplyUpdates({final bool forceRefresh = false}) async {
     if (_cache == null) {
-      _log('Cannot fetch updates - cache not initialized. Call initialize() first.');
+      _log(
+        'Cannot fetch updates - cache not initialized. Call initialize() first.',
+      );
       return;
     }
 

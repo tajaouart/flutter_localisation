@@ -39,7 +39,6 @@ void main() {
       service = TranslationService(
         config: TranslationConfig.freeUser(
           supportedLocales: <String>['en', 'es'],
-          enableLogging: false,
         ),
         httpClient: mockHttpClient,
       );
@@ -96,7 +95,6 @@ void main() {
       service = TranslationService(
         config: TranslationConfig.freeUser(
           supportedLocales: <String>['en'],
-          enableLogging: false,
         ),
         httpClient: mockHttpClient,
       );
