@@ -3,9 +3,22 @@ import 'package:flutter_localisation/flutter_localisation.dart';
 
 /// Provider that makes the TranslationService available throughout the widget tree.
 class TranslationProvider extends InheritedWidget {
+  /// The translation service instance
   final TranslationService service;
+
+  /// The generated Flutter localizations (AppLocalizations)
   final dynamic generatedLocalizations;
 
+  /// Creates a translation provider that exposes translation services to descendants
+  ///
+  /// Example:
+  /// ```dart
+  /// TranslationProvider(
+  ///   service: translationService,
+  ///   generatedLocalizations: AppLocalizations.of(context),
+  ///   child: MyApp(),
+  /// )
+  /// ```
   const TranslationProvider({
     required this.service,
     required this.generatedLocalizations,
@@ -20,6 +33,10 @@ class TranslationProvider extends InheritedWidget {
     return result!;
   }
 
+  /// Returns the [TranslationProvider] from the widget tree, or null if not found
+  ///
+  /// Unlike [of], this method returns null instead of throwing an error when
+  /// no provider is found in the widget tree.
   static TranslationProvider? maybeOf(final BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<TranslationProvider>();
   }

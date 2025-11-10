@@ -18,6 +18,9 @@ class TranslationConfig {
   /// How often to check for updates in the background (null = disabled)
   final Duration? backgroundCheckInterval;
 
+  /// Creates a translation configuration with custom settings
+  ///
+  /// For most use cases, prefer [TranslationConfig.freeUser] or [TranslationConfig.paidUser]
   const TranslationConfig({
     this.secretKey,
     this.flavorName,
