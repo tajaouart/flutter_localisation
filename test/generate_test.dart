@@ -23,43 +23,54 @@ void main() {
     group('Method Parsing Tests', () {
       test('should parse simple getter', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
-abstract class AppLocalizations {
-  String get hello;
-}
-''');
+        await _setupProject(
+          projectDir,
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         expect(await outputFile.exists(), isTrue);
 
         final String content = await outputFile.readAsString();
         expect(content, contains('String get hello'));
-        expect(content, contains("return translate("));
+        expect(content, contains('return translate('));
         expect(content, contains("'hello',"));
         expect(content, contains('generatedLocalizations.hello'));
       });
 
       test('should parse method with single parameter', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   String greet(String name);
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains('String greet(String name)'));
@@ -69,43 +80,62 @@ abstract class AppLocalizations {
 
       test('should parse method with multiple parameters', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   String welcome(String name, int count);
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains('String welcome(String name, int count)'));
         expect(content, contains("'name': name"));
         expect(content, contains("'count': count"));
-        expect(content, contains('generatedLocalizations.welcome(name, count)'));
+        expect(
+          content,
+          contains('generatedLocalizations.welcome(name, count)'),
+        );
       });
 
       test('should skip static methods', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   String get hello;
   static String of(BuildContext context);
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains('String get hello'));
@@ -114,20 +144,28 @@ abstract class AppLocalizations {
 
       test('should skip localeName property', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   String get localeName;
   String get hello;
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains('String get hello'));
@@ -136,22 +174,30 @@ abstract class AppLocalizations {
 
       test('should handle multiple methods and getters', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   String get appTitle;
   String get cancel;
   String greet(String name);
   String itemCount(int count);
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains('String get appTitle'));
@@ -181,11 +227,19 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
-        expect(content, contains("const String embeddedArbTimestamp = '$timestamp'"));
+        expect(
+          content,
+          contains("const String embeddedArbTimestamp = '$timestamp'"),
+        );
       });
 
       test('should handle missing timestamp gracefully', () async {
@@ -205,8 +259,13 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains("const String embeddedArbTimestamp = ''"));
@@ -224,12 +283,16 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        expect(result.stdout.toString(), contains('Warning: Could not extract ARB timestamp'));
+        expect(
+          result.stdout.toString(),
+          contains('Warning: Could not extract ARB timestamp'),
+        );
       });
     });
 
     group('Path Detection Tests', () {
-      test('should detect localization in lib/localization/generated/', () async {
+      test('should detect localization in lib/localization/generated/',
+          () async {
         // ARRANGE
         await _setupProjectCustomPath(
           projectDir,
@@ -241,7 +304,10 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        expect(result.stdout.toString(), contains('lib/localization/generated'));
+        expect(
+          result.stdout.toString(),
+          contains('lib/localization/generated'),
+        );
       });
 
       test('should detect localization in lib/l10n/', () async {
@@ -268,15 +334,21 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         expect(await outputFile.exists(), isTrue);
       });
 
       test('should output to lib/src/ for packages', () async {
         // ARRANGE - Has lib/src directory = package
         await _setupProject(projectDir);
-        final Directory srcDir = Directory(path.join(projectDir.path, 'lib', 'src'));
+        final Directory srcDir =
+            Directory(path.join(projectDir.path, 'lib', 'src'));
         await srcDir.create(recursive: true);
 
         // ACT
@@ -284,8 +356,9 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'src', 'generated_methods.dart'));
+        final File outputFile = File(
+          path.join(projectDir.path, 'lib', 'src', 'generated_methods.dart'),
+        );
         expect(await outputFile.exists(), isTrue);
       });
     });
@@ -301,7 +374,10 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 1);
-        expect(result.stdout.toString(), contains('Could not find pubspec.yaml'));
+        expect(
+          result.stdout.toString(),
+          contains('Could not find pubspec.yaml'),
+        );
       });
 
       test('should fail if no localization file found', () async {
@@ -317,44 +393,62 @@ environment:
 
         // ASSERT
         expect(result.exitCode, isNot(0));
-        final String output = result.stdout.toString() + result.stderr.toString();
-        expect(output, contains('Could not find generated app_localizations.dart'));
+        final String output =
+            result.stdout.toString() + result.stderr.toString();
+        expect(
+          output,
+          contains('Could not find generated app_localizations.dart'),
+        );
       });
 
       test('should fail if no methods found in localization file', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   // Empty class
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 1);
-        expect(result.stdout.toString(), contains('No translation methods found'));
+        expect(
+          result.stdout.toString(),
+          contains('No translation methods found'),
+        );
       });
     });
 
     group('Generated Code Quality Tests', () {
       test('should generate well-formatted Dart code', () async {
         // ARRANGE
-        await _setupProject(projectDir, localizationContent: '''
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
 abstract class AppLocalizations {
   String get hello;
   String greet(String name);
 }
-''');
+''',
+        );
 
         // ACT
         final ProcessResult result = await _runGenerator(projectDir);
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         // Verify basic Dart syntax elements are present
@@ -375,8 +469,13 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(content, contains('// GENERATED CODE - DO NOT MODIFY BY HAND'));
@@ -393,13 +492,20 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
         expect(
           content,
-          contains("import 'package:flutter_localisation/flutter_localisation.dart';"),
+          contains(
+            "import 'package:flutter_localisation/flutter_localisation.dart';",
+          ),
         );
       });
 
@@ -412,11 +518,19 @@ abstract class AppLocalizations {
 
         // ASSERT
         expect(result.exitCode, 0);
-        final File outputFile =
-            File(path.join(projectDir.path, 'lib', 'generated_translation_methods.dart'));
+        final File outputFile = File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        );
         final String content = await outputFile.readAsString();
 
-        expect(content, contains('extension GeneratedTranslationMethods on Translator'));
+        expect(
+          content,
+          contains('extension GeneratedTranslationMethods on Translator'),
+        );
       });
     });
   });
@@ -452,7 +566,8 @@ environment:
 
   // Create l10n.yaml and ARB files if arbContent provided
   if (arbContent != null) {
-    final Directory arbDir = Directory(path.join(projectDir.path, 'lib', 'l10n'));
+    final Directory arbDir =
+        Directory(path.join(projectDir.path, 'lib', 'l10n'));
     await arbDir.create(recursive: true);
 
     await File(path.join(projectDir.path, 'l10n.yaml')).writeAsString('''
@@ -477,7 +592,8 @@ environment:
 ''');
 
   // Create localization file at custom path
-  final File localizationFile = File(path.join(projectDir.path, localizationPath));
+  final File localizationFile =
+      File(path.join(projectDir.path, localizationPath));
   await localizationFile.parent.create(recursive: true);
   await localizationFile.writeAsString('''
 abstract class AppLocalizations {
