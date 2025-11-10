@@ -16,8 +16,8 @@ void main(final List<String> args) async {
 
 class FlutterTranslationGenerator {
   late final String _projectRoot;
-  late final String _localizationsPath;
-  late final String _outputPath;
+  String? _localizationsPath;
+  String? _outputPath;
 
   Future<void> generate() async {
     _findProjectRoot();
@@ -83,7 +83,7 @@ class FlutterTranslationGenerator {
       }
     }
 
-    if (_localizationsPath.isEmpty) {
+    if (_localizationsPath == null) {
       throw Exception('Could not find generated app_localizations.dart. '
           'Please run "flutter gen-l10n" first.');
     }
@@ -96,7 +96,7 @@ class FlutterTranslationGenerator {
   }
 
   Future<String> _readLocalizationsFile() async {
-    final File file = File(_localizationsPath);
+    final File file = File(_localizationsPath!);
     return await file.readAsString();
   }
 
@@ -265,12 +265,11 @@ class FlutterTranslationGenerator {
   }
 
   Future<void> _writeGeneratedFile(final String content) async {
-    final File outputFile = File(_outputPath);
+    final File outputFile = File(_outputPath!);
     await outputFile.parent.create(recursive: true);
     await outputFile.writeAsString(content);
   }
 
-  /// TODO create test
   Future<String?> _extractArbTimestamp() async {
     try {
       final File l10nFile = File('$_projectRoot/l10n.yaml');
