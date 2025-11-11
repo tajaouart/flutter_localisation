@@ -3,3 +3,18 @@
 .dart_tool/
 example/.idea/
 .idea/
+
+# Coverage
+coverage/html/
+*.lcov
+
+# Build artifacts
+build/
+
+# Platform specific
+example/macos/Podfile.lock
+example/.flutter-plugins-dependencies
+example/.packages
+
+# Development
+.claude/

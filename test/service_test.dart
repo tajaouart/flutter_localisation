@@ -14,7 +14,7 @@ class MockHttpClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(final http.BaseRequest request) async {
     return http.StreamedResponse(
-      Stream<List<int>>.fromIterable(<List<int>>[]),
+      Stream<List<int>>.fromIterable(const <List<int>>[]),
       200,
     );
   }
@@ -26,7 +26,7 @@ void main() {
     late MockHttpClient mockHttpClient;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       mockHttpClient = MockHttpClient();
     });
 
@@ -38,7 +38,7 @@ void main() {
       // ARRANGE & ACT
       service = TranslationService(
         config: TranslationConfig.freeUser(
-          supportedLocales: <String>['en', 'es'],
+          supportedLocales: const <String>['en', 'es'],
         ),
         httpClient: mockHttpClient,
       );
@@ -76,7 +76,7 @@ void main() {
       // ARRANGE
       service = TranslationService(
         config: TranslationConfig.freeUser(
-          supportedLocales: <String>['en', 'fr'],
+          supportedLocales: const <String>['en', 'fr'],
         ),
         httpClient: mockHttpClient,
       );
@@ -94,7 +94,7 @@ void main() {
       // ARRANGE
       service = TranslationService(
         config: TranslationConfig.freeUser(
-          supportedLocales: <String>['en'],
+          supportedLocales: const <String>['en'],
         ),
         httpClient: mockHttpClient,
       );
@@ -114,7 +114,7 @@ void main() {
     late MockHttpClient mockHttpClient;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       prefs = await SharedPreferences.getInstance();
       mockHttpClient = MockHttpClient();
     });
@@ -313,7 +313,7 @@ void main() {
         () async {
       // ARRANGE: Define a list of diverse locales and an API timestamp
       const String apiTimestamp = '2025-09-15T10:00:00Z';
-      final List<String> locales = <String>[
+      const List<String> locales = <String>[
         'en',
         'es',
         'ar',
@@ -325,7 +325,7 @@ void main() {
       // Programmatically build the 'translations' map for the mock API response
       // This creates a unique greeting for each language.
       final Map<String, dynamic> apiTranslations = <String, dynamic>{
-        for (String locale in locales)
+        for (final String locale in locales)
           locale: <String, String>{
             'greeting': 'Hello in $locale',
             'app_title': 'App Title $locale',
@@ -344,7 +344,7 @@ void main() {
 
       // Initialize the service with all the languages we expect to support
       service = TranslationService(
-        config: TranslationConfig(
+        config: const TranslationConfig(
           supportedLocales: locales,
           // Tell the service to load all these locales
           projectId: 99,
@@ -406,7 +406,7 @@ void main() {
     late MockHttpClient mockHttpClient;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       mockHttpClient = MockHttpClient();
     });
 
@@ -603,7 +603,7 @@ void main() {
       late MockHttpClient mockHttpClient;
 
       setUp(() async {
-        SharedPreferences.setMockInitialValues(<String, Object>{});
+        SharedPreferences.setMockInitialValues(const <String, Object>{});
         mockHttpClient = MockHttpClient();
       });
 
@@ -751,16 +751,28 @@ void main() {
     late CacheManager cacheManager;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       prefs = await SharedPreferences.getInstance();
       cacheManager = CacheManager(prefs);
     });
 
     test('clearLocale only removes data for the specified locale', () async {
       // ARRANGE: Save data for three locales
-      await cacheManager.save('en', <String, String>{'hello': 'Hello'}, 'v1');
-      await cacheManager.save('fr', <String, String>{'hello': 'Bonjour'}, 'v1');
-      await cacheManager.save('es', <String, String>{'hello': 'Hola'}, 'v1');
+      await cacheManager.save(
+        'en',
+        const <String, String>{'hello': 'Hello'},
+        'v1',
+      );
+      await cacheManager.save(
+        'fr',
+        const <String, String>{'hello': 'Bonjour'},
+        'v1',
+      );
+      await cacheManager.save(
+        'es',
+        const <String, String>{'hello': 'Hola'},
+        'v1',
+      );
 
       // ACT: Clear only the French locale
       await cacheManager.clearLocale('fr');
@@ -778,7 +790,11 @@ void main() {
 
     test('clearAll removes ALL locale data and the global timestamp', () async {
       // ARRANGE: Save data and a global timestamp
-      await cacheManager.save('en', <String, String>{'hello': 'Hello'}, 'v1');
+      await cacheManager.save(
+        'en',
+        const <String, String>{'hello': 'Hello'},
+        'v1',
+      );
       await cacheManager.setLastCacheUpdateTime('2025-01-01T12:00:00Z');
 
       // ACT: Clear everything
@@ -796,7 +812,7 @@ void main() {
     late MockApiRepository mockRepository; // Use the generated mock
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       mockRepository = MockApiRepository();
 
       // Create the service, injecting the MOCK repository
@@ -845,7 +861,7 @@ void main() {
 
     setUp(() async {
       // Ensure a clean state for each test
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       prefs = await SharedPreferences.getInstance();
       mockRepository = MockApiRepository();
     });
@@ -963,7 +979,7 @@ void main() {
     // This runs before each test in the group
     setUp(() async {
       // Start with a clean slate for SharedPreferences and create a new mock repository
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       prefs = await SharedPreferences.getInstance();
       mockRepository = MockApiRepository();
     });

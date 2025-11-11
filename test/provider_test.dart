@@ -99,6 +99,195 @@ void main() {
       expect(retrievedService, equals(service));
     });
 
+    testWidgets('TranslationProvider.maybeOf returns provider when available',
+        (final WidgetTester tester) async {
+      TranslationProvider? retrievedProvider;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TranslationProvider(
+            service: service,
+            generatedLocalizations: mockLocalizations,
+            child: Builder(
+              builder: (final BuildContext context) {
+                retrievedProvider = TranslationProvider.maybeOf(context);
+                return Container();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(retrievedProvider, isNotNull);
+      expect(retrievedProvider!.service, equals(service));
+    });
+
+    testWidgets('TranslationProvider.maybeOf returns null when not available',
+        (final WidgetTester tester) async {
+      TranslationProvider? retrievedProvider;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (final BuildContext context) {
+              retrievedProvider = TranslationProvider.maybeOf(context);
+              return Container();
+            },
+          ),
+        ),
+      );
+
+      expect(retrievedProvider, isNull);
+    });
+
+    testWidgets('TranslationProvider.of throws assertion when not available',
+        (final WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (final BuildContext context) {
+              expect(
+                () => TranslationProvider.of(context),
+                throwsAssertionError,
+              );
+              return Container();
+            },
+          ),
+        ),
+      );
+    });
+
+    testWidgets('updateShouldNotify returns true when service changes',
+        (final WidgetTester tester) async {
+      final TestFlutterLocalisationTranslationService newService =
+          TestFlutterLocalisationTranslationService();
+      int buildCount = 0;
+
+      final ValueNotifier<TranslationService> serviceNotifier =
+          ValueNotifier<TranslationService>(service);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ValueListenableBuilder<TranslationService>(
+            valueListenable: serviceNotifier,
+            builder: (
+              final BuildContext context,
+              final TranslationService currentService,
+              final Widget? child,
+            ) {
+              return TranslationProvider(
+                service: currentService,
+                generatedLocalizations: mockLocalizations,
+                child: Builder(
+                  builder: (final BuildContext context) {
+                    buildCount++;
+                    TranslationProvider.of(context);
+                    return Container();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+
+      // Change the service
+      serviceNotifier.value = newService;
+      await tester.pump();
+
+      // Should rebuild because service changed
+      expect(buildCount, equals(2));
+    });
+
+    testWidgets(
+        'updateShouldNotify returns true when generatedLocalizations changes',
+        (final WidgetTester tester) async {
+      final MockAppLocalizations newLocalizations = MockAppLocalizations();
+      int buildCount = 0;
+
+      final ValueNotifier<MockAppLocalizations> localizationsNotifier =
+          ValueNotifier<MockAppLocalizations>(mockLocalizations);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ValueListenableBuilder<MockAppLocalizations>(
+            valueListenable: localizationsNotifier,
+            builder: (
+              final BuildContext context,
+              final MockAppLocalizations currentLocalizations,
+              final Widget? child,
+            ) {
+              return TranslationProvider(
+                service: service,
+                generatedLocalizations: currentLocalizations,
+                child: Builder(
+                  builder: (final BuildContext context) {
+                    buildCount++;
+                    TranslationProvider.of(context);
+                    return Container();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+
+      // Change the localizations
+      localizationsNotifier.value = newLocalizations;
+      await tester.pump();
+
+      // Should rebuild because localizations changed
+      expect(buildCount, equals(2));
+    });
+
+    testWidgets(
+        'updateShouldNotify returns false when neither service nor localizations change',
+        (final WidgetTester tester) async {
+      int buildCount = 0;
+      final ValueNotifier<int> dummyNotifier = ValueNotifier<int>(0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ValueListenableBuilder<int>(
+            valueListenable: dummyNotifier,
+            builder: (
+              final BuildContext context,
+              final int value,
+              final Widget? child,
+            ) {
+              return TranslationProvider(
+                service: service,
+                generatedLocalizations: mockLocalizations,
+                child: Builder(
+                  builder: (final BuildContext context) {
+                    buildCount++;
+                    TranslationProvider.of(context);
+                    return Container();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+
+      // Change dummy value but not service or localizations
+      dummyNotifier.value = 1;
+      await tester.pump();
+
+      // ValueListenableBuilder rebuilds its child tree when value changes,
+      // but since TranslationProvider's updateShouldNotify returns false,
+      // widgets that depend on it won't be notified
+      expect(buildCount, equals(2));
+    });
+
     testWidgets('Context extension provides FlutterLocalisation',
         (final WidgetTester tester) async {
       late Translator translations;

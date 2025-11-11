@@ -1,3 +1,9 @@
 .idea/
 build/
-
+coverage/
+.claude/
+README 2.md
+example/macos/Podfile.lock
+example/.dart_tool/
+example/build/
+build.sh
