@@ -1,6 +1,6 @@
 name: flutter_localisation
 description: A command-line tool for generating localization files for different flavors.
-version: 2.0.0
+version: 2.1.0
 repository: https://github.com/tajaouart/flutter_localisation
 
 environment:

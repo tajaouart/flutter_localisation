@@ -25,5 +25,19 @@
 ## 1.0.3
 - Updated ReadMe & example app.
 
+## 2.1.0
+### Added
+- Automatic git pull before generating localization files.
+- Comprehensive dartdoc comments for public API.
+- Extensive test coverage with 60+ tests.
+
+### Changed
+- Made initialize() optional for free users.
+- Improved code formatting and organization.
+
+### Fixed
+- All linting issues for pub.dev compliance.
+- Git tracking cleanup.
+
 ## 2.0.0
 - Support Live update feature.
