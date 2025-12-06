@@ -45,7 +45,7 @@ export PATH="$PATH":"$HOME/.pub-cache/bin"
 ```yaml
 # pubspec.yaml
 dependencies:
-  flutter_localisation: ^2.0.0
+  flutter_localisation: ^2.1.2
   flutter_localizations:
     sdk: flutter
   intl: any
@@ -102,6 +102,8 @@ Replace `production` with your flavor name. This generates all the necessary loc
 ### Step 4: Configure Your Flutter App
 
 ```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
 import 'package:your_app/localization/generated/app_localizations.dart';
 import 'package:your_app/generated_translation_methods.dart';

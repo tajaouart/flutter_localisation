@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.2] - 2025-12-06
+### Fixed
+- Added missing `flutter_localizations` import in README documentation example
+- Updated version reference in README to ^2.1.1
+- Added `// ignore_for_file: non_constant_identifier_names` to generated code to suppress linting warnings
+
 ## [2.1.1] - 2025-12-01
 ### Added
 - Automatic cache invalidation after code generation
