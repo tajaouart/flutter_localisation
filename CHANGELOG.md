@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.1.1] - 2025-12-01
+### Added
+- Automatic cache invalidation after code generation
+- Automatic `flutter pub get` execution to refresh dependencies
+- Clear warning message about needing to fully restart the app
+
+### Changed
+- CLI now automatically deletes `.dart_tool/` directory and `.flutter-plugins-dependencies` after generation
+- Does NOT delete `build/` folder to avoid slow rebuilds (users must fully restart app instead)
+- Simplified workflow - users only need to run `flutter_localisation arbs <flavor>` and fully restart their app
+- Updated documentation to emphasize the need for full app restart (not hot reload/restart)
+
+### Fixed
+- Stale Dart analysis cache causing "method not found" errors on generated translation keys
+- Improved user experience by automating cache cleanup
+
 ## [1.0.0] - 2024-06-08
 ### Added
 - Initial release of `flutter_localisation`.

@@ -173,5 +173,163 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 90)),
     );
+
+    test(
+      'should report generated files count on successful generation',
+      () async {
+        // ACT: Run the script
+        final ProcessResult result = await Process.run(
+          'dart',
+          <String>['run', scriptPath, 'arbs', 'usa'],
+          workingDirectory: exampleDir.path,
+        );
+
+        // ASSERT: Check output contains file count
+        final String output = result.stdout.toString();
+        expect(
+          output,
+          contains('Localization generation completed successfully'),
+          reason: 'Should report successful generation',
+        );
+        expect(
+          output,
+          contains('Generated'),
+          reason: 'Should report number of generated files',
+        );
+        expect(result.exitCode, 0);
+      },
+      timeout: const Timeout(Duration(seconds: 90)),
+    );
+  });
+
+  group('FlutterLocalisation CLI Error Handling', () {
+    final String projectRoot = Directory.current.path;
+    final String scriptPath =
+        path.join(projectRoot, 'bin', 'flutter_localisation.dart');
+
+    test(
+      'should fail with exit code 1 when flavor folder does not exist',
+      () async {
+        // ARRANGE: Create temp directory without the flavor folder
+        final Directory tempDir = await Directory.systemTemp.createTemp(
+          'flutter_localisation_test_',
+        );
+        final Directory arbsDir = Directory(path.join(tempDir.path, 'arbs'));
+        await arbsDir.create();
+        // Note: NOT creating the 'nonexistent' flavor folder
+
+        // ACT: Run the script with a non-existent flavor
+        final ProcessResult result = await Process.run(
+          'dart',
+          <String>['run', scriptPath, 'arbs', 'nonexistent'],
+          workingDirectory: tempDir.path,
+        );
+
+        // ASSERT: Should fail with exit code 1
+        expect(result.exitCode, 1);
+        expect(
+          result.stdout.toString(),
+          contains('Invalid flavor folder'),
+          reason: 'Should report invalid flavor folder',
+        );
+
+        // Clean up
+        await tempDir.delete(recursive: true);
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'should fail with exit code 1 when no ARB files found',
+      () async {
+        // ARRANGE: Create temp directory with empty flavor folder
+        final Directory tempDir = await Directory.systemTemp.createTemp(
+          'flutter_localisation_test_',
+        );
+        final Directory arbsDir = Directory(path.join(tempDir.path, 'arbs'));
+        await arbsDir.create();
+        final Directory flavorDir =
+            Directory(path.join(arbsDir.path, 'empty_flavor'));
+        await flavorDir.create();
+        // Note: NOT creating any ARB files
+
+        // ACT: Run the script
+        final ProcessResult result = await Process.run(
+          'dart',
+          <String>['run', scriptPath, 'arbs', 'empty_flavor'],
+          workingDirectory: tempDir.path,
+        );
+
+        // ASSERT: Should fail with exit code 1
+        expect(result.exitCode, 1);
+        expect(
+          result.stdout.toString(),
+          contains('No ARB files found'),
+          reason: 'Should report no ARB files found',
+        );
+
+        // Clean up
+        await tempDir.delete(recursive: true);
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'should fail with exit code 1 when less than 2 arguments provided',
+      () async {
+        // ARRANGE: Create temp directory
+        final Directory tempDir = await Directory.systemTemp.createTemp(
+          'flutter_localisation_test_',
+        );
+
+        // ACT: Run the script with only one argument
+        final ProcessResult result = await Process.run(
+          'dart',
+          <String>['run', scriptPath, 'arbs'],
+          workingDirectory: tempDir.path,
+        );
+
+        // ASSERT: Should fail with exit code 1
+        expect(result.exitCode, 1);
+        expect(
+          result.stdout.toString(),
+          contains('Both arguments are required'),
+          reason: 'Should report that both arguments are required',
+        );
+
+        // Clean up
+        await tempDir.delete(recursive: true);
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'should fail with exit code 1 when no arguments provided',
+      () async {
+        // ARRANGE: Create temp directory
+        final Directory tempDir = await Directory.systemTemp.createTemp(
+          'flutter_localisation_test_',
+        );
+
+        // ACT: Run the script with no arguments
+        final ProcessResult result = await Process.run(
+          'dart',
+          <String>['run', scriptPath],
+          workingDirectory: tempDir.path,
+        );
+
+        // ASSERT: Should fail with exit code 1
+        expect(result.exitCode, 1);
+        expect(
+          result.stdout.toString(),
+          contains('Both arguments are required'),
+          reason: 'Should report that both arguments are required',
+        );
+
+        // Clean up
+        await tempDir.delete(recursive: true);
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
   });
 }

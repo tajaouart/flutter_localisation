@@ -50,6 +50,14 @@ Future<void> main(final List<String> args) async {
       'Found ARB files: ${arbFiles.map((final File f) => path.basename(f.path)).join(', ')}',
     );
 
+    // Parse l10n.yaml to get output directory for verification
+    final String l10nContent = await l10nFile.readAsString();
+    final String outputDir = _parseL10nProperty(l10nContent, 'output-dir') ??
+        'lib/localization/generated';
+    final String outputFile =
+        _parseL10nProperty(l10nContent, 'output-localization-file') ??
+            'app_localizations.dart';
+
     // Run the flutter gen-l10n command to generate localization
     final ProcessResult result =
         await Process.run('flutter', <String>['gen-l10n']);
@@ -59,16 +67,67 @@ Future<void> main(final List<String> args) async {
 
     _logger.info('Flutter gen-l10n output:\n$stdoutStr');
 
+    // Check exit code first
+    if (result.exitCode != 0) {
+      _logger.severe(
+        'flutter gen-l10n failed with exit code ${result.exitCode}',
+      );
+      if (stderrStr.isNotEmpty) {
+        _logger.severe('Error output: $stderrStr');
+      }
+      exit(1);
+    }
+
+    // Check for errors in stderr (excluding known informational messages)
+    // - "Because l10n.yaml exists" is just an info message
+    // - "Waiting for another flutter command" is a temporary lock message
     if (stderrStr.isNotEmpty &&
-        !stderrStr.contains('Because l10n.yaml exists')) {
+        !stderrStr.contains('Because l10n.yaml exists') &&
+        !stderrStr.contains('Waiting for another flutter command')) {
       _logger.severe('Error during localization generation: $stderrStr');
       exit(1);
     }
 
-    _logger.info('Localization generation completed successfully.');
+    // Verify that output files were actually created
+    final File generatedFile = File(path.join(outputDir, outputFile));
+    if (!generatedFile.existsSync()) {
+      _logger.severe(
+        'Localization generation failed: Expected output file not found at '
+        '${generatedFile.path}',
+      );
+      _logger.severe(
+        'Please check your l10n.yaml configuration and ARB files for errors.',
+      );
+      exit(1);
+    }
+
+    // Verify the generated directory has the expected locale files
+    final Directory outputDirectory = Directory(outputDir);
+    final List<FileSystemEntity> generatedFiles = outputDirectory
+        .listSync()
+        .where(
+          (final FileSystemEntity f) =>
+              f is File && f.path.endsWith('.dart'),
+        )
+        .toList();
+
+    if (generatedFiles.length < 2) {
+      _logger.warning(
+        '⚠️ Expected at least 2 generated files (base + locale), '
+        'but found ${generatedFiles.length}',
+      );
+    }
+
+    _logger.info(
+      '✅ Localization generation completed successfully. '
+      'Generated ${generatedFiles.length} files in $outputDir.',
+    );
 
     _logger.info('🎯 Starting FlutterLocalisation methods generation...');
     await _runGeneration();
+
+    _logger.info('');
+    _logger.info('✅ All done! Translations updated successfully.');
   } on Exception catch (e) {
     _logger.severe('An error occurred: $e');
     exit(1);
@@ -342,6 +401,14 @@ Future<List<File>> _getArbFiles(final Directory flavorDirectory) async {
       .whereType<File>()
       .where((final File file) => file.path.endsWith('.arb'))
       .toList();
+}
+
+/// Parses a property value from l10n.yaml content.
+/// Returns null if the property is not found.
+String? _parseL10nProperty(final String content, final String property) {
+  final RegExp regex = RegExp('^$property:\\s*(.+)\$', multiLine: true);
+  final RegExpMatch? match = regex.firstMatch(content);
+  return match?.group(1)?.trim();
 }
 
 void _setupLogging() {

@@ -523,8 +523,11 @@ void main() {
         Directory(path.join(testDir.path, 'lib/l10n/$initialFlavor'));
     final Directory newDir =
         Directory(path.join(testDir.path, 'lib/l10n/$newFlavor'));
+    final Directory outputDir =
+        Directory(path.join(testDir.path, 'lib/localization/generated'));
     await initialDir.create(recursive: true);
     await newDir.create(recursive: true);
+    await outputDir.create(recursive: true);
 
     // Add a dummy ARB file for the new flavor
     await File(path.join(newDir.path, 'app_en.arb')).writeAsString('''
@@ -534,8 +537,11 @@ void main() {
 }
 ''');
 
-    // Ensure l10n.yaml exists with the initial flavor
-    await l10nFile.writeAsString('arb-dir: lib/l10n/$initialFlavor');
+    // Ensure l10n.yaml exists with the initial flavor (include output-dir)
+    await l10nFile.writeAsString('''arb-dir: lib/l10n/$initialFlavor
+output-dir: lib/localization/generated
+output-localization-file: app_localizations.dart
+''');
 
     // Log the initial content for debugging
     print('Initial l10n.yaml content: ${await l10nFile.readAsString()}');

@@ -213,8 +213,9 @@ When you need to update translations:
 
 1. Edit translations on the dashboard at flutterlocalisation.com
 2. Changes are automatically pushed to Git
-3. Run: `flutter_localisation arbs production` (automatically pulls latest changes from Git)
-4. For paid plans with live updates, your app will fetch changes automatically on next launch
+3. Run: `flutter_localisation arbs production` (handles everything automatically)
+4. **Fully stop and restart your app** (hot reload/restart will NOT work)
+5. For paid plans with live updates, your app can also fetch changes automatically at runtime
 
 ---
 
@@ -226,10 +227,14 @@ Whenever you update ARB files:
 flutter_localisation arbs your_flavor_name
 ```
 
-This command automatically:
+This single command does everything needed:
 - Pulls latest changes from Git (if the ARB folder is a Git repository)
 - Regenerates standard Flutter localization files in `lib/localization/generated/`
 - Generates extension methods file at `lib/generated_translation_methods.dart`
+- Invalidates Dart analysis cache (`.dart_tool/`)
+- Runs `flutter pub get` to refresh dependencies
+
+**Important:** After running this command, you **must fully stop and restart your app**. Hot reload (r) or hot restart (R) will NOT work because the compiled code needs to be rebuilt with the new translations.
 
 ---
 
@@ -401,9 +406,10 @@ Check out the [example](./example) folder for a complete working implementation 
 - ARB files must be named like `app_en.arb`, `app_es.arb`, etc.
 
 ### Generated code not working
-- Run `flutter clean` and `flutter pub get`
-- Ensure `flutter: generate: true` is in `pubspec.yaml`
+- The CLI tool automatically handles cache invalidation
+- If still having issues, ensure `flutter: generate: true` is in `pubspec.yaml`
 - Check that `l10n.yaml` exists and points to correct ARB directory
+- As a last resort, manually run `flutter clean && flutter pub get`
 
 ### Live updates not working
 - Verify your API key is correct (starts with `sk_live_`)
@@ -413,10 +419,10 @@ Check out the [example](./example) folder for a complete working implementation 
 - Enable logging to see detailed error messages
 
 ### Translations not updating
-1. Update translations on dashboard
-2. Pull latest ARB files from Git: `cd arbs && git pull`
-3. Regenerate code: `flutter_localisation arbs your_flavor`
-4. Rebuild your app or hot restart
+1. Simply run: `flutter_localisation arbs your_flavor`
+   - This automatically pulls from Git, regenerates code, and clears caches
+2. Hot restart (press `R`) or fully restart your app
+3. No manual cache clearing or pub get needed!
 
 ---
 

@@ -238,7 +238,8 @@ class FlutterTranslationGenerator {
       buffer.writeln('    return translate(');
       buffer.writeln("      '${method.name}',");
       buffer.writeln('      {},');
-      buffer.writeln('      () => generatedLocalizations.${method.name},');
+      // Use direct property access on dynamic - this works on all platforms
+      buffer.writeln('      () => generatedLocalizations.${method.name} as String,');
       buffer.writeln('    );');
       buffer.writeln('  }');
     } else {
@@ -257,7 +258,7 @@ class FlutterTranslationGenerator {
       buffer.writeln("      '${method.name}',");
       buffer.writeln('      {$argsMap},');
       buffer.writeln(
-        '      () => generatedLocalizations.${method.name}($argsList),',
+        '      () => generatedLocalizations.${method.name}($argsList) as String,',
       );
       buffer.writeln('    );');
       buffer.writeln('  }');
