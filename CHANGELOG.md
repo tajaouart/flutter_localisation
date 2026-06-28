@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.1.3] - 2026-06-28
+### Changed
+- Rewrote the package description for clarity and discoverability (i18n/l10n keywords).
+- Added `homepage`, `documentation`, `issue_tracker`, and `topics` (localization, internationalization, i18n, l10n, intl) to improve pub.dev discovery.
+### Fixed
+- Replaced the LICENSE file with the full MIT license text so the license is correctly detected (matches the README, which already states MIT).
+- Moved `mockito` from `dependencies` to `dev_dependencies` (it is only used in tests).
+- Removed a stray duplicate `README 2.md`.
+### Docs
+- Added pub.dev badges and links to the free online tools (ARB Editor, ARB Diff, l10n.yaml Generator, Locale Explorer).
+
 ## [2.1.2] - 2025-12-06
 ### Fixed
 - Added missing `flutter_localizations` import in README documentation example

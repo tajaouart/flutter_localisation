@@ -1,9 +1,18 @@
 # Flutter Localisation
 
+[![pub package](https://img.shields.io/pub/v/flutter_localisation.svg)](https://pub.dev/packages/flutter_localisation)
+[![pub points](https://img.shields.io/pub/points/flutter_localisation)](https://pub.dev/packages/flutter_localisation/score)
+[![likes](https://img.shields.io/pub/likes/flutter_localisation)](https://pub.dev/packages/flutter_localisation/score)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
+**Type-safe Flutter localization (i18n / l10n) from your ARB files** — code generation, multi-flavor support, plurals and parameters, plus optional over-the-air translation updates so you can ship copy changes without an app release.
+
 A complete Flutter localization solution that combines:
 - **CLI tool** for generating type-safe localization code from ARB files
 - **Live updates** via [flutterlocalisation.com](https://flutterlocalisation.com) (optional, paid feature)
 - **Flavor-based** localization structure for multi-environment apps
+
+> 🧰 **Free online tools (no signup):** [ARB Editor](https://flutterlocalisation.com/tools/arb-editor) · [ARB Diff](https://flutterlocalisation.com/tools/arb-diff) · [l10n.yaml Generator](https://flutterlocalisation.com/tools/l10n-yaml-generator) · [Locale Explorer](https://flutterlocalisation.com/tools/flutter-locale-explorer)
 
 ## Features
 
