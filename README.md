@@ -16,7 +16,7 @@ A complete Flutter localization solution that combines:
 
 ## See it in action
 
-[![FlutterLocalisation translation management dashboard](https://flutterlocalisation.com/assets/screenshots/dashboard-main.png)](https://flutterlocalisation.com)
+[![FlutterLocalisation translation management dashboard](https://flutterlocalisation.com/assets/screenshots/dashboard-main.png?v=2)](https://flutterlocalisation.com)
 
 **Three steps to ship multilingual apps:**
 
@@ -26,7 +26,7 @@ A complete Flutter localization solution that combines:
 
 | Visual translation editor | Team collaboration |
 | :---: | :---: |
-| ![Visual ARB translation editor](https://flutterlocalisation.com/assets/screenshots/project-editor.png) | ![Invite translators and reviewers with role-based permissions](https://flutterlocalisation.com/assets/screenshots/team-members.png) |
+| ![Visual ARB translation editor](https://flutterlocalisation.com/assets/screenshots/project-editor.png?v=2) | ![Invite translators and reviewers with role-based permissions](https://flutterlocalisation.com/assets/screenshots/team-members.png?v=2) |
 
 ## Features
 

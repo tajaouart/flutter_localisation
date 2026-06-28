@@ -2,7 +2,7 @@ name: flutter_localisation
 description: >-
   Type-safe Flutter localization (i18n/l10n) from ARB files: code generation,
   flavors, plurals, and optional over-the-air translation updates for your app.
-version: 2.1.4
+version: 2.1.5
 homepage: https://flutterlocalisation.com
 repository: https://github.com/tajaouart/flutter_localisation
 issue_tracker: https://github.com/tajaouart/flutter_localisation/issues

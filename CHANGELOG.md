@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.5] - 2026-06-28
+### Docs
+- Refreshed the README product screenshots with the current dashboard UI (projects, translation editor, team, analytics) and cache-busted the image URLs.
+
 ## [2.1.4] - 2026-06-28
 ### Docs
 - Added a "See it in action" section to the README with product screenshots (dashboard, the connect → translate → sync flow, visual editor, and team collaboration).
