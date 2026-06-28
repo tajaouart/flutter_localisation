@@ -14,6 +14,20 @@ A complete Flutter localization solution that combines:
 
 > 🧰 **Free online tools (no signup):** [ARB Editor](https://flutterlocalisation.com/tools/arb-editor) · [ARB Diff](https://flutterlocalisation.com/tools/arb-diff) · [l10n.yaml Generator](https://flutterlocalisation.com/tools/l10n-yaml-generator) · [Locale Explorer](https://flutterlocalisation.com/tools/flutter-locale-explorer)
 
+## See it in action
+
+[![FlutterLocalisation translation management dashboard](https://flutterlocalisation.com/assets/screenshots/dashboard-main.png)](https://flutterlocalisation.com)
+
+**Three steps to ship multilingual apps:**
+
+| 1. Connect your repo | 2. Translate with AI | 3. Sync to Git |
+| :---: | :---: | :---: |
+| ![Connect your GitHub, GitLab or Bitbucket repository](https://flutterlocalisation.com/assets/screenshots/workflow-git-connect-trim.png) | ![Manage and AI-translate keys with your team](https://flutterlocalisation.com/assets/screenshots/workflow-member-creation-trim.png) | ![Push translations back to your repo automatically](https://flutterlocalisation.com/assets/screenshots/workflow-github-arb-trim.png) |
+
+| Visual translation editor | Team collaboration |
+| :---: | :---: |
+| ![Visual ARB translation editor](https://flutterlocalisation.com/assets/screenshots/project-editor.png) | ![Invite translators and reviewers with role-based permissions](https://flutterlocalisation.com/assets/screenshots/team-members.png) |
+
 ## Features
 
 ### Free (Local Usage)

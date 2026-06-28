@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.4] - 2026-06-28
+### Docs
+- Added a "See it in action" section to the README with product screenshots (dashboard, the connect → translate → sync flow, visual editor, and team collaboration).
+
 ## [2.1.3] - 2026-06-28
 ### Changed
 - Rewrote the package description for clarity and discoverability (i18n/l10n keywords).
