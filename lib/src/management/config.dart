@@ -23,18 +23,29 @@ const String kTokenEnvVar = 'FL_API_TOKEN';
 class ProjectConfig {
   ProjectConfig({
     required this.baseUrl,
-    required this.projectId,
+    this.projectId,
+    this.project,
     this.flavor,
     this.arbDir,
   });
 
   final String baseUrl;
-  final int projectId;
+
+  /// Optional numeric project id. If absent, the project is resolved by name
+  /// (`project`) or — when the workspace has a single project — automatically.
+  final int? projectId;
+
+  /// Optional project name (alternative to [projectId]).
+  final String? project;
   final String? flavor;
   final String? arbDir;
 
+  /// A selector string (name or id) for [ProjectResolver], or null.
+  String? get projectSelector => project ?? projectId?.toString();
+
   /// Load from an explicit path, or search upward from [startDir] for
-  /// `flutterlocalisation.json`.
+  /// `flutterlocalisation.json`. All fields are optional except that the file
+  /// must exist (it carries at least `base_url`); project can be resolved later.
   static ProjectConfig load({final String? path, final String? startDir}) {
     final File file = path != null
         ? File(path)
@@ -42,7 +53,7 @@ class ProjectConfig {
     if (!file.existsSync()) {
       throw ConfigException(
         'No project config found. Create `$kProjectConfigName` with '
-        '{"base_url": "...", "project_id": <id>, "flavor": "..."} or pass --config.',
+        '{"base_url": "...", "project": "<name or id>", "flavor": "..."} or pass --config.',
       );
     }
     late final Map<String, dynamic> json;
@@ -52,12 +63,10 @@ class ProjectConfig {
       throw ConfigException('Could not parse ${file.path}: $e');
     }
     final Object? pid = json['project_id'];
-    if (pid is! int) {
-      throw ConfigException('`project_id` (int) is required in ${file.path}.');
-    }
     return ProjectConfig(
       baseUrl: (json['base_url'] as String?)?.trimRight() ?? kDefaultBaseUrl,
-      projectId: pid,
+      projectId: pid is int ? pid : null,
+      project: json['project'] as String?,
       flavor: json['flavor'] as String?,
       arbDir: json['arb_dir'] as String?,
     );

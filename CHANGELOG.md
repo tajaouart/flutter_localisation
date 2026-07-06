@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.3.0] - 2026-07-07
+### Added
+- **Project discovery — pick projects by name, no numeric ids.** The API token is a workspace
+  credential, so the CLI and MCP now list your projects and resolve them by name:
+  - `fl projects` lists accessible projects with their flavors and locales.
+  - `fl` gained a global `--project <name|id>`; `project_id` in `flutterlocalisation.json` is now
+    optional (a single project resolves automatically; or set `"project": "<name>"`).
+  - MCP: new `list_projects` tool; every tool accepts optional `project`/`flavor` by name.
+    `FL_PROJECT_ID` is no longer required (use `FL_PROJECT` for a default, or none at all).
+- Backed by a new `GET /api/projects/` endpoint that lists the caller's projects.
+
 ## [2.2.0] - 2026-07-06
 ### Added
 - **`fl` management CLI** — add, edit, delete, and AI-translate translation keys straight from

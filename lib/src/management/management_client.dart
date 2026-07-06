@@ -186,6 +186,52 @@ class BatchTranslateResult {
   }
 }
 
+/// A lightweight project entry from `GET /api/projects/` (no translations).
+class ProjectSummary {
+  ProjectSummary({
+    required this.id,
+    required this.name,
+    required this.workspace,
+    required this.flavors,
+  });
+
+  final int id;
+  final String name;
+  final String workspace;
+  final List<FlavorSummary> flavors;
+
+  factory ProjectSummary.fromJson(final Map<String, dynamic> j) =>
+      ProjectSummary(
+        id: j['id'] as int,
+        name: (j['name'] ?? '') as String,
+        workspace: (j['workspace'] ?? '') as String,
+        flavors: ((j['flavors'] ?? const <dynamic>[]) as List)
+            .map((final e) =>
+                FlavorSummary.fromJson(e as Map<String, dynamic>),)
+            .toList(),
+      );
+}
+
+class FlavorSummary {
+  FlavorSummary({
+    required this.name,
+    required this.baseLanguage,
+    required this.languages,
+  });
+
+  final String name;
+  final String? baseLanguage;
+  final List<String> languages;
+
+  factory FlavorSummary.fromJson(final Map<String, dynamic> j) => FlavorSummary(
+        name: (j['name'] ?? '') as String,
+        baseLanguage: j['base_language'] as String?,
+        languages: ((j['languages'] ?? const <dynamic>[]) as List)
+            .map((final e) => e as String)
+            .toList(),
+      );
+}
+
 // --------------------------------------------------------------------------- //
 // Client
 // --------------------------------------------------------------------------- //
@@ -212,6 +258,17 @@ class ManagementClient {
       };
 
   Uri _uri(final String path) => Uri.parse('$baseUrl$path');
+
+  /// List the projects (with flavors + locales) this token/user can access.
+  Future<List<ProjectSummary>> listProjects() async {
+    final http.Response res = await _send('GET', '/api/projects/');
+    final List<dynamic> raw =
+        (_json(res)['projects'] ?? const <dynamic>[]) as List<dynamic>;
+    return raw
+        .map((final dynamic e) =>
+            ProjectSummary.fromJson(e as Map<String, dynamic>),)
+        .toList();
+  }
 
   /// GET the full project (structure + translation ids).
   Future<ProjectData> getProject(final int projectId) async {

@@ -363,6 +363,7 @@ dart pub global activate flutter_localisation
 # { "base_url": "https://api.flutterlocalisation.com", "project_id": 31, "flavor": "production" }
 
 fl login --token flk_live_xxx           # stores the token (chmod 600)
+fl projects                             # list your projects (pick by name, not id)
 fl add greeting --value "Hello" --translate   # add key + AI-fill every other locale
 fl edit greeting --locale fr --value "Bonjour"
 fl translate greeting --missing         # fill only empty locales
@@ -370,6 +371,10 @@ fl status                               # completion % per locale
 fl delete greeting                      # all locales (or --locale fr for one)
 fl pull                                 # git pull the ARB repo
 ```
+
+You don't need to know a numeric project id. `flutterlocalisation.json` may set
+`"project": "<name>"` (or omit it entirely if the workspace has one project), and any command
+takes `--project "<name or id>"`.
 
 Add `--dry-run` to preview any command, or `--json` for machine-readable output. Run
 `dart run flutter_localisation:fl --help` from within a project without global activation.
@@ -386,18 +391,17 @@ in your MCP client:
     "flutter-localisation": {
       "command": "dart",
       "args": ["pub", "global", "run", "flutter_localisation:fl_mcp"],
-      "env": {
-        "FL_API_TOKEN": "flk_live_xxx",
-        "FL_PROJECT_ID": "31",
-        "FL_FLAVOR": "production"
-      }
+      "env": { "FL_API_TOKEN": "flk_live_xxx" }
     }
   }
 }
 ```
 
-Then ask Claude things like *"add a key `checkout_button` = 'Buy now' and translate it to all my
-locales."* Tools: `list_status`, `add_string`, `edit_string`, `delete_string`, `translate_key`.
+The token is workspace-scoped, so Claude discovers projects itself — no numeric id needed. Ask
+things like *"list my projects"*, then *"in the Shopping App, add a key `checkout_button` =
+'Buy now' and translate it to all locales."* Optionally set `FL_PROJECT` / `FL_FLAVOR` for a
+default. Tools: `list_projects`, `list_status`, `add_string`, `edit_string`, `delete_string`,
+`translate_key` (each takes an optional `project`/`flavor` by name).
 
 ---
 

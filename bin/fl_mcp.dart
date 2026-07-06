@@ -2,15 +2,18 @@
 /// `fl_mcp` — Model Context Protocol server for FlutterLocalisation.
 ///
 /// Exposes translation-key management to Claude (or any MCP client) over stdio, reusing the
-/// exact same `Operations` core as the `fl` CLI. Mutating tools follow a **preview → apply**
-/// split: they run as a dry-run unless called with `"apply": true`, so the human confirms
-/// the diff before anything is written.
+/// same `Operations` core as the `fl` CLI. The token is a *workspace* credential, so the
+/// server discovers projects itself — users pick a project **by name** (via `list_projects`
+/// or a `project` argument); they never hand-type a numeric id.
+///
+/// Mutating tools follow a **preview → apply** split: dry-run unless called with
+/// `"apply": true`, so the human confirms the diff before anything is written.
 ///
 /// Configuration via environment (set in the MCP client config):
 ///   FL_API_TOKEN   (required)  scoped flk_live_ token
-///   FL_PROJECT_ID  (required)  numeric project id
 ///   FL_BASE_URL    (optional)  defaults to https://api.flutterlocalisation.com
-///   FL_FLAVOR      (optional)  flavor name if the project has several
+///   FL_PROJECT     (optional)  default project name or id, if you don't want to pass it per call
+///   FL_FLAVOR      (optional)  default flavor
 ///
 /// Run: `dart run flutter_localisation:fl_mcp`
 library;
@@ -22,18 +25,18 @@ import 'package:flutter_localisation/src/management/config.dart';
 import 'package:flutter_localisation/src/management/exceptions.dart';
 import 'package:flutter_localisation/src/management/management_client.dart';
 import 'package:flutter_localisation/src/management/operations.dart';
+import 'package:flutter_localisation/src/management/project_resolver.dart';
 
 const String _protocolVersion = '2024-11-05';
 const String _serverName = 'flutter-localisation';
-const String _serverVersion = '2.1.5';
+const String _serverVersion = '2.3.0';
 
-late final Operations _ops;
 late final ManagementClient _client;
+late final ProjectResolver _resolver;
 
 Future<void> main(final List<String> args) async {
   _bootstrap();
 
-  // MCP stdio transport: newline-delimited JSON-RPC 2.0 messages.
   final Stream<String> lines =
       stdin.transform(utf8.decoder).transform(const LineSplitter());
 
@@ -44,7 +47,7 @@ Future<void> main(final List<String> args) async {
     try {
       msg = jsonDecode(trimmed) as Map<String, dynamic>;
     } catch (_) {
-      continue; // ignore unparseable lines
+      continue;
     }
     await _handle(msg);
   }
@@ -53,27 +56,25 @@ Future<void> main(final List<String> args) async {
 void _bootstrap() {
   final Map<String, String> env = Platform.environment;
   final String? token = env['FL_API_TOKEN'];
-  final String? projectRaw = env['FL_PROJECT_ID'];
-  if (token == null || token.isEmpty || projectRaw == null) {
-    stderr.writeln('fl_mcp: FL_API_TOKEN and FL_PROJECT_ID are required.');
-    exit(64);
-  }
-  final int? projectId = int.tryParse(projectRaw);
-  if (projectId == null) {
-    stderr.writeln('fl_mcp: FL_PROJECT_ID must be an integer.');
+  if (token == null || token.isEmpty) {
+    stderr.writeln('fl_mcp: FL_API_TOKEN is required.');
     exit(64);
   }
   final String baseUrl = env['FL_BASE_URL'] ?? kDefaultBaseUrl;
   _client = ManagementClient(baseUrl: baseUrl, token: token);
-  _ops = Operations(_client, projectId, flavor: env['FL_FLAVOR']);
-  stderr.writeln('fl_mcp: ready (project $projectId @ $baseUrl).');
+  _resolver = ProjectResolver(
+    _client,
+    // Accept either FL_PROJECT (name or id) or the legacy FL_PROJECT_ID.
+    defaultProject: env['FL_PROJECT'] ?? env['FL_PROJECT_ID'],
+    defaultFlavor: env['FL_FLAVOR'],
+  );
+  stderr.writeln('fl_mcp: ready @ $baseUrl (workspace-scoped; pick projects by name).');
 }
 
 Future<void> _handle(final Map<String, dynamic> msg) async {
   final Object? id = msg['id'];
   final String method = (msg['method'] ?? '') as String;
 
-  // Notifications (no id) get no response.
   switch (method) {
     case 'initialize':
       _reply(id, <String, dynamic>{
@@ -92,11 +93,14 @@ Future<void> _handle(final Map<String, dynamic> msg) async {
       _reply(id, <String, dynamic>{'tools': _toolDefinitions()});
       return;
     case 'tools/call':
-      await _callTool(id, (msg['params'] ?? const <String, dynamic>{}) as Map<String, dynamic>);
+      await _callTool(
+        id,
+        (msg['params'] ?? const <String, dynamic>{}) as Map<String, dynamic>,
+      );
       return;
     case 'notifications/initialized':
     case 'notifications/cancelled':
-      return; // no-op notifications
+      return;
     default:
       if (id != null) {
         _error(id, -32601, 'Method not found: $method');
@@ -108,15 +112,38 @@ Future<void> _handle(final Map<String, dynamic> msg) async {
 // Tools
 // --------------------------------------------------------------------------- //
 
+/// Shared project/flavor selectors added to every project-scoped tool.
+Map<String, dynamic> get _projectProps => <String, dynamic>{
+      'project': <String, dynamic>{
+        'type': 'string',
+        'description':
+            'Project name or id. Optional if there is only one project or a default is set. '
+                'Call list_projects to see the options.',
+      },
+      'flavor': <String, dynamic>{
+        'type': 'string',
+        'description': 'Flavor name. Optional if the project has a single flavor.',
+      },
+    };
+
 List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
       <String, dynamic>{
-        'name': 'list_status',
+        'name': 'list_projects',
         'description':
-            'List every locale for the project with translation completion counts. '
-                'Read-only; call this first to understand the current state.',
+            'List the projects (with their flavors and locales) this token can access. '
+                'Call this first so the user can pick a project by name.',
         'inputSchema': <String, dynamic>{
           'type': 'object',
           'properties': <String, dynamic>{},
+        },
+      },
+      <String, dynamic>{
+        'name': 'list_status',
+        'description':
+            'Show translation completion per locale for a project/flavor. Read-only.',
+        'inputSchema': <String, dynamic>{
+          'type': 'object',
+          'properties': <String, dynamic>{..._projectProps},
         },
       },
       <String, dynamic>{
@@ -139,6 +166,7 @@ List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
               'description': 'false = preview only (default); true = actually write.',
               'default': false,
             },
+            ..._projectProps,
           },
           'required': <String>['key', 'value'],
         },
@@ -154,6 +182,7 @@ List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
             'locale': <String, dynamic>{'type': 'string', 'description': 'e.g. fr'},
             'value': <String, dynamic>{'type': 'string'},
             'apply': <String, dynamic>{'type': 'boolean', 'default': false},
+            ..._projectProps,
           },
           'required': <String>['key', 'locale', 'value'],
         },
@@ -172,6 +201,7 @@ List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
               'description': 'Optional; omit to delete all locales of the key.',
             },
             'apply': <String, dynamic>{'type': 'boolean', 'default': false},
+            ..._projectProps,
           },
           'required': <String>['key'],
         },
@@ -191,6 +221,7 @@ List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
               'items': <String, dynamic>{'type': 'string'},
             },
             'apply': <String, dynamic>{'type': 'boolean', 'default': false},
+            ..._projectProps,
           },
           'required': <String>['key'],
         },
@@ -204,32 +235,64 @@ Future<void> _callTool(final Object? id, final Map<String, dynamic> params) asyn
   final bool apply = (a['apply'] ?? false) as bool;
 
   try {
+    // list_projects needs no project resolution.
+    if (name == 'list_projects') {
+      final List<ProjectSummary> projects =
+          await _resolver.projects(refresh: true);
+      _toolResult(id, <String, dynamic>{
+        'ok': true,
+        'projects': projects
+            .map((final ProjectSummary p) => <String, dynamic>{
+                  'name': p.name,
+                  'id': p.id,
+                  'workspace': p.workspace,
+                  'flavors': p.flavors
+                      .map((final FlavorSummary f) => <String, dynamic>{
+                            'name': f.name,
+                            'base_language': f.baseLanguage,
+                            'locales': f.languages,
+                          },)
+                      .toList(),
+                },)
+            .toList(),
+      });
+      return;
+    }
+
+    // Every other tool is project-scoped: resolve name/id → Operations.
+    final ResolvedTarget target = await _resolver.resolve(
+      project: a['project'] as String?,
+      flavor: a['flavor'] as String?,
+    );
+    final Operations ops =
+        Operations(_client, target.projectId, flavor: target.flavor);
+
     final OpResult r;
     switch (name) {
       case 'list_status':
-        r = await _ops.status();
+        r = await ops.status();
       case 'add_string':
-        r = await _ops.add(
+        r = await ops.add(
           a['key'] as String,
           a['value'] as String,
           translate: (a['translate'] ?? false) as bool,
           dryRun: !apply,
         );
       case 'edit_string':
-        r = await _ops.edit(
+        r = await ops.edit(
           a['key'] as String,
           a['locale'] as String,
           value: a['value'] as String?,
           dryRun: !apply,
         );
       case 'delete_string':
-        r = await _ops.delete(
+        r = await ops.delete(
           a['key'] as String,
           locale: a['locale'] as String?,
           dryRun: !apply,
         );
       case 'translate_key':
-        r = await _ops.translate(
+        r = await ops.translate(
           a['key'] as String,
           all: (a['all'] ?? false) as bool,
           locales: (a['locales'] as List<dynamic>?)?.cast<String>(),
@@ -239,9 +302,13 @@ Future<void> _callTool(final Object? id, final Map<String, dynamic> params) asyn
         _error(id, -32602, 'Unknown tool: $name');
         return;
     }
-    _toolResult(id, r.toJson(), isError: !r.ok);
+    final Map<String, dynamic> out = r.toJson();
+    out['project'] = target.projectName;
+    if (target.flavor != null) out['flavor'] = target.flavor;
+    _toolResult(id, out, isError: !r.ok);
   } on ManagementException catch (e) {
-    _toolResult(id, <String, dynamic>{'ok': false, 'error': e.message}, isError: true);
+    _toolResult(id, <String, dynamic>{'ok': false, 'error': e.message},
+        isError: true,);
   }
 }
 
@@ -250,7 +317,7 @@ Future<void> _callTool(final Object? id, final Map<String, dynamic> params) asyn
 // --------------------------------------------------------------------------- //
 
 void _toolResult(final Object? id, final Map<String, dynamic> data,
-    {final bool isError = false}) {
+    {final bool isError = false,}) {
   _reply(id, <String, dynamic>{
     'content': <Map<String, dynamic>>[
       <String, dynamic>{

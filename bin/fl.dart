@@ -22,6 +22,7 @@ import 'package:flutter_localisation/src/management/config.dart';
 import 'package:flutter_localisation/src/management/exceptions.dart';
 import 'package:flutter_localisation/src/management/management_client.dart';
 import 'package:flutter_localisation/src/management/operations.dart';
+import 'package:flutter_localisation/src/management/project_resolver.dart';
 
 Future<void> main(final List<String> args) async {
   final CommandRunner<int> runner = CommandRunner<int>(
@@ -30,6 +31,8 @@ Future<void> main(final List<String> args) async {
   )
     ..argParser.addOption('config', help: 'Path to flutterlocalisation.json.')
     ..argParser.addOption('token', help: 'flk_live_ API token (overrides env/file).')
+    ..argParser.addOption('project',
+        help: 'Project name or id (overrides config; use `fl projects` to list).',)
     ..argParser.addOption('flavor', help: 'Flavor name (if the project has several).')
     ..argParser.addFlag('dry-run',
         negatable: false, help: 'Show what would happen without changing anything.',)
@@ -37,6 +40,7 @@ Future<void> main(final List<String> args) async {
         negatable: false, help: 'Emit machine-readable JSON.',);
 
   runner.addCommand(LoginCommand());
+  runner.addCommand(ProjectsCommand());
   runner.addCommand(AddCommand());
   runner.addCommand(EditCommand());
   runner.addCommand(DeleteCommand());
@@ -71,14 +75,43 @@ mixin _ApiCommand on Command<int> {
   ProjectConfig loadProject() =>
       ProjectConfig.load(path: globalResults?['config'] as String?);
 
-  ({ManagementClient client, Operations ops}) build(final ProjectConfig cfg) {
+  ManagementClient buildClient(final ProjectConfig cfg) {
     final Credentials creds = Credentials.resolve(
       explicit: globalResults?['token'] as String?,
       baseUrl: cfg.baseUrl,
     );
-    final ManagementClient client = ManagementClient(baseUrl: cfg.baseUrl, token: creds.token);
+    return ManagementClient(baseUrl: cfg.baseUrl, token: creds.token);
+  }
+
+  /// Resolve the target project (by id/name, or the sole project) and build [Operations].
+  Future<({ManagementClient client, Operations ops, String projectName})> build(
+    final ProjectConfig cfg,
+  ) async {
+    final ManagementClient client = buildClient(cfg);
+    final String? projectArg = globalResults?['project'] as String?;
     final String? flavor = (globalResults?['flavor'] as String?) ?? cfg.flavor;
-    return (client: client, ops: Operations(client, cfg.projectId, flavor: flavor));
+
+    // Fast path: an explicit numeric id in config and no name override — no lookup needed.
+    if (projectArg == null && cfg.projectId != null) {
+      return (
+        client: client,
+        ops: Operations(client, cfg.projectId!, flavor: flavor),
+        projectName: cfg.project ?? 'project ${cfg.projectId}',
+      );
+    }
+
+    final ProjectResolver resolver = ProjectResolver(
+      client,
+      defaultProject: cfg.projectSelector,
+      defaultFlavor: flavor,
+    );
+    final ResolvedTarget target =
+        await resolver.resolve(project: projectArg, flavor: flavor);
+    return (
+      client: client,
+      ops: Operations(client, target.projectId, flavor: target.flavor),
+      projectName: target.projectName,
+    );
   }
 
   int emit(final OpResult r) {
@@ -116,6 +149,55 @@ class LoginCommand extends Command<int> {
   }
 }
 
+class ProjectsCommand extends Command<int> with _ApiCommand {
+  @override
+  String get name => 'projects';
+  @override
+  String get description => 'List the projects (and flavors) you can access.';
+
+  @override
+  Future<int> run() async {
+    final ManagementClient client = buildClient(loadProject());
+    try {
+      final List<ProjectSummary> projects = await client.listProjects();
+      if (jsonOut) {
+        stdout.writeln(const JsonEncoder.withIndent('  ').convert(
+          projects
+              .map((final ProjectSummary p) => <String, dynamic>{
+                    'id': p.id,
+                    'name': p.name,
+                    'workspace': p.workspace,
+                    'flavors': p.flavors
+                        .map((final FlavorSummary f) => <String, dynamic>{
+                              'name': f.name,
+                              'base': f.baseLanguage,
+                              'locales': f.languages,
+                            },)
+                        .toList(),
+                  },)
+              .toList(),
+        ),);
+        return 0;
+      }
+      if (projects.isEmpty) {
+        stdout.writeln('No projects accessible with this token.');
+        return 0;
+      }
+      for (final ProjectSummary p in projects) {
+        stdout.writeln('${p.name}  (id ${p.id})');
+        for (final FlavorSummary f in p.flavors) {
+          final String base =
+              f.baseLanguage != null ? '  [base ${f.baseLanguage}]' : '';
+          stdout.writeln('  · ${f.name}: ${f.languages.join(", ")}$base');
+        }
+      }
+      return 0;
+    } finally {
+      client.close();
+    }
+  }
+}
+
 class AddCommand extends Command<int> with _ApiCommand {
   AddCommand() {
     argParser.addOption('value', mandatory: true, help: 'Base-language value.');
@@ -133,7 +215,7 @@ class AddCommand extends Command<int> with _ApiCommand {
   @override
   Future<int> run() async {
     final String key = _requireKey(this);
-    final ({ManagementClient client, Operations ops}) built = build(loadProject());
+    final ({ManagementClient client, Operations ops, String projectName}) built = await build(loadProject());
     try {
       final OpResult r = await built.ops.add(
         key,
@@ -175,7 +257,7 @@ class EditCommand extends Command<int> with _ApiCommand {
           p.split(':').first: <String, String>{'type': p.contains(':') ? p.split(':').last : 'String'},
       };
     }
-    final ({ManagementClient client, Operations ops}) built = build(loadProject());
+    final ({ManagementClient client, Operations ops, String projectName}) built = await build(loadProject());
     try {
       final OpResult r = await built.ops.edit(
         key,
@@ -209,7 +291,7 @@ class DeleteCommand extends Command<int> with _ApiCommand {
   @override
   Future<int> run() async {
     final String key = _requireKey(this);
-    final ({ManagementClient client, Operations ops}) built = build(loadProject());
+    final ({ManagementClient client, Operations ops, String projectName}) built = await build(loadProject());
     try {
       final OpResult r = await built.ops.delete(
         key,
@@ -240,7 +322,7 @@ class TranslateCommand extends Command<int> with _ApiCommand {
   @override
   Future<int> run() async {
     final String key = _requireKey(this);
-    final ({ManagementClient client, Operations ops}) built = build(loadProject());
+    final ({ManagementClient client, Operations ops, String projectName}) built = await build(loadProject());
     try {
       final OpResult r = await built.ops.translate(
         key,
@@ -263,7 +345,7 @@ class StatusCommand extends Command<int> with _ApiCommand {
 
   @override
   Future<int> run() async {
-    final ({ManagementClient client, Operations ops}) built = build(loadProject());
+    final ({ManagementClient client, Operations ops, String projectName}) built = await build(loadProject());
     try {
       final OpResult r = await built.ops.status();
       if (jsonOut) return emit(r);
