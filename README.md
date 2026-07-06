@@ -343,6 +343,64 @@ TranslationService(config: TranslationConfig(...))
 
 ---
 
+## Manage from the terminal & Claude (`fl` CLI + MCP)
+
+Add, edit, delete, and AI-translate keys without opening the dashboard — from your terminal or
+from Claude — then `git pull` the ARBs. Both tools ship with this package and use a scoped
+`flk_live_…` API token you create in the dashboard under **API Keys**.
+
+> The token is read from `--token`, the `FL_API_TOKEN` environment variable, or
+> `~/.config/flutterlocalisation/credentials.json` (chmod 600). It is **never** embedded in your
+> app — keep it on your dev machine / CI / MCP host only. Give it just the scopes it needs
+> (`strings:read`, `strings:write`, `translate`).
+
+### CLI
+
+```bash
+dart pub global activate flutter_localisation
+
+# Project config: flutterlocalisation.json in your project root
+# { "base_url": "https://api.flutterlocalisation.com", "project_id": 31, "flavor": "production" }
+
+fl login --token flk_live_xxx           # stores the token (chmod 600)
+fl add greeting --value "Hello" --translate   # add key + AI-fill every other locale
+fl edit greeting --locale fr --value "Bonjour"
+fl translate greeting --missing         # fill only empty locales
+fl status                               # completion % per locale
+fl delete greeting                      # all locales (or --locale fr for one)
+fl pull                                 # git pull the ARB repo
+```
+
+Add `--dry-run` to preview any command, or `--json` for machine-readable output. Run
+`dart run flutter_localisation:fl --help` from within a project without global activation.
+
+### MCP server (Claude)
+
+`fl_mcp` is a Model Context Protocol server so Claude can manage your translations. Mutating
+tools are **preview-by-default** — they only write when called with `apply: true`. Configure it
+in your MCP client:
+
+```json
+{
+  "mcpServers": {
+    "flutter-localisation": {
+      "command": "dart",
+      "args": ["pub", "global", "run", "flutter_localisation:fl_mcp"],
+      "env": {
+        "FL_API_TOKEN": "flk_live_xxx",
+        "FL_PROJECT_ID": "31",
+        "FL_FLAVOR": "production"
+      }
+    }
+  }
+}
+```
+
+Then ask Claude things like *"add a key `checkout_button` = 'Buy now' and translate it to all my
+locales."* Tools: `list_status`, `add_string`, `edit_string`, `delete_string`, `translate_key`.
+
+---
+
 ## Team Collaboration (Paid)
 
 ### Add Team Members

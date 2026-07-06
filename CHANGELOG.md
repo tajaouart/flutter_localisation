@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0] - 2026-07-06
+### Added
+- **`fl` management CLI** — add, edit, delete, and AI-translate translation keys straight from
+  the terminal (full dashboard parity), then `git pull` the ARBs. Commands: `login`, `add`
+  (`--translate`), `edit`, `delete`, `translate`, `status`, `pull`; global `--dry-run`/`--json`.
+- **`fl_mcp` MCP server** — a Model Context Protocol server (stdio) exposing the same operations
+  as tools, so Claude can manage your translations. Mutating tools are preview-by-default and
+  only write when called with `apply: true`.
+- Auth uses a scoped `flk_live_…` API token (created in the dashboard → API Keys), resolved from
+  `--token` / `$FL_API_TOKEN` / `~/.config/flutterlocalisation/credentials.json` (chmod 600).
+- New `args` dependency (used only by the `fl`/`fl_mcp` executables, not the runtime library).
+
 ## [2.1.5] - 2026-06-28
 ### Docs
 - Refreshed the README product screenshots with the current dashboard UI (projects, translation editor, team, analytics) and cache-busted the image URLs.
