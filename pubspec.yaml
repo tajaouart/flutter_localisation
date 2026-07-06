@@ -26,6 +26,7 @@ dependencies:
   intl: ^0.20.2
   shared_preferences: ^2.5.3
   path: ^1.9.1
+  args: ^2.4.0
   flutter_localizations:
     sdk: flutter
 
@@ -40,5 +41,7 @@ dev_dependencies:
 executables:
   flutter_localisation: flutter_localisation
   generate: generate
+  fl: fl
+  fl_mcp: fl_mcp
 flutter:
   generate: true
