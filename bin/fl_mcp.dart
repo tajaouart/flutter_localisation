@@ -29,7 +29,7 @@ import 'package:flutter_localisation/src/management/project_resolver.dart';
 
 const String _protocolVersion = '2024-11-05';
 const String _serverName = 'flutter-localisation';
-const String _serverVersion = '2.4.0';
+const String _serverVersion = '2.4.1';
 
 late final ManagementClient _client;
 late final ProjectResolver _resolver;

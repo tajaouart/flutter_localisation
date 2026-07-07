@@ -382,20 +382,32 @@ Add `--dry-run` to preview any command, or `--json` for machine-readable output.
 ### MCP server (Claude)
 
 `fl_mcp` is a Model Context Protocol server so Claude can manage your translations. Mutating
-tools are **preview-by-default** — they only write when called with `apply: true`. Configure it
-in your MCP client:
+tools are **preview-by-default** — they only write when called with `apply: true`.
+
+After `dart pub global activate flutter_localisation`, the `fl_mcp` executable is installed in
+`~/.pub-cache/bin`. Use that shim directly — **do not** use `dart pub global run …`, which
+cannot launch executables from a package that depends on the Flutter SDK.
+
+**Claude Code:**
+
+```bash
+claude mcp add flutter-localisation --env FL_API_TOKEN=flk_live_xxx -- fl_mcp
+```
+
+**Claude Desktop** (use the absolute path — Desktop's PATH often omits `~/.pub-cache/bin`):
 
 ```json
 {
   "mcpServers": {
     "flutter-localisation": {
-      "command": "dart",
-      "args": ["pub", "global", "run", "flutter_localisation:fl_mcp"],
+      "command": "/Users/you/.pub-cache/bin/fl_mcp",
       "env": { "FL_API_TOKEN": "flk_live_xxx" }
     }
   }
 }
 ```
+
+(`fl_mcp` alone works if `~/.pub-cache/bin` is on your PATH.)
 
 The token is workspace-scoped, so Claude discovers projects itself — no numeric id needed. Ask
 things like *"list my projects"*, then *"in the Shopping App, add a key `checkout_button` =

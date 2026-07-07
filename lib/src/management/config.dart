@@ -51,10 +51,14 @@ class ProjectConfig {
         ? File(path)
         : _findUpwards(startDir ?? Directory.current.path);
     if (!file.existsSync()) {
-      throw ConfigException(
-        'No project config found. Create `$kProjectConfigName` with '
-        '{"base_url": "...", "project": "<name or id>", "flavor": "..."} or pass --config.',
-      );
+      // An explicitly-passed --config that doesn't exist is a user error.
+      if (path != null) {
+        throw ConfigException('Config file not found: $path');
+      }
+      // No project config in the tree is fine: workspace-level commands (projects,
+      // login) and token-only usage work without one, and project commands resolve
+      // the project by name/`--project` or auto-pick the sole project.
+      return ProjectConfig(baseUrl: kDefaultBaseUrl);
     }
     late final Map<String, dynamic> json;
     try {

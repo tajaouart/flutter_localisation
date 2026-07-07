@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.1] - 2026-07-07
+### Fixed
+- **MCP launch command in the docs.** `dart pub global run flutter_localisation:fl_mcp` fails
+  ("requires the Flutter SDK, unsupported for global executables") because the package depends
+  on Flutter. Use the installed `fl_mcp` shim instead (`~/.pub-cache/bin/fl_mcp`). README and
+  the Claude Code / Desktop configs updated.
+- **`fl projects` / token-only commands no longer require a `flutterlocalisation.json`.** A
+  missing project config in the working tree is now fine — `projects`/`login` and any
+  `--project <name>`/single-project command work with just `--token` (base URL defaults to
+  production). An explicitly-passed `--config` that doesn't exist still errors.
+
+
 ## [2.4.0] - 2026-07-07
 ### Fixed
 - **`fl delete <key>` (and MCP `delete_string` without a locale) now deletes the whole key.**
