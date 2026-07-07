@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.0] - 2026-07-07
+### Fixed
+- **`fl delete <key>` (and MCP `delete_string` without a locale) now deletes the whole key.**
+  Previously it removed each locale's translation but left an empty key behind. Backed by a new
+  `POST /api/projects/<id>/translation_keys/delete/` endpoint. Deleting a single locale
+  (`--locale fr`) still removes just that translation.
+### Added
+- **Git-sync warnings.** If the backend's GitHub token has expired (ARB pushes failing),
+  `fl projects` shows a "⚠️ git sync disconnected — reconnect GitHub in the dashboard" note,
+  MCP `list_projects` includes a `warning`, and any "token expired" error now prints a clear
+  hint to reconnect. Reconnect from the dashboard (project → Repo).
+
 ## [2.3.0] - 2026-07-07
 ### Added
 - **Project discovery — pick projects by name, no numeric ids.** The API token is a workspace

@@ -102,33 +102,42 @@ class Operations {
     return OpResult(true, 'Updated "$key" [$locale].', <String, dynamic>{'key': key, 'locale': locale});
   }
 
-  /// Delete a key. With [locale], deletes just that locale; otherwise deletes every
-  /// locale's translation for the key (there is no server-side delete-whole-key).
+  /// Delete a key. Without [locale] the whole key is removed (all locales + the key
+  /// itself). With [locale], only that one locale's translation is deleted.
   Future<OpResult> delete(
     final String key, {
     final String? locale,
     final bool dryRun = false,
   }) async {
+    // Whole-key delete: one call, removes the TranslationKey too (no orphaned empty key).
+    if (locale == null) {
+      if (dryRun) {
+        return OpResult(true, 'DRY RUN: would delete the whole key "$key" (all locales).');
+      }
+      await client.deleteKey(projectId, key);
+      return OpResult(
+        true,
+        'Deleted key "$key" (all locales).',
+        <String, dynamic>{'key': key},
+      );
+    }
+
+    // Single-locale delete: remove just that locale's translation.
     final ProjectData project = await client.getProject(projectId);
-    final List<({String locale, int id, bool empty})> entries =
-        project.entriesForKey(key, flavorName: flavor);
-    final List<({String locale, int id, bool empty})> targets = locale == null
-        ? entries
-        : entries.where((final ({bool empty, int id, String locale}) e) => e.locale == locale).toList();
+    final List<({String locale, int id, bool empty})> targets = project
+        .entriesForKey(key, flavorName: flavor)
+        .where((final ({bool empty, int id, String locale}) e) => e.locale == locale)
+        .toList();
 
     if (targets.isEmpty) {
-      return OpResult(false, 'Nothing to delete for "$key"'
-          '${locale != null ? ' [$locale]' : ''}.');
+      return OpResult(false, 'Nothing to delete for "$key" [$locale].');
     }
     if (dryRun) {
-      return OpResult(true,
-          'DRY RUN: would delete ${targets.length} translation(s) for "$key".',);
+      return OpResult(true, 'DRY RUN: would delete "$key" [$locale].');
     }
-    for (final ({bool empty, int id, String locale}) t in targets) {
-      await client.deleteTranslation(t.id);
-    }
-    return OpResult(true, 'Deleted ${targets.length} translation(s) for "$key".',
-        <String, dynamic>{'key': key, 'deleted': targets.length},);
+    await client.deleteTranslation(targets.first.id);
+    return OpResult(true, 'Deleted "$key" [$locale].',
+        <String, dynamic>{'key': key, 'locale': locale},);
   }
 
   /// AI-translate a key's locales. Defaults to the missing ones; pass [all] for every

@@ -56,11 +56,15 @@ Future<void> main(final List<String> args) async {
     exit(64);
   } on ManagementException catch (e) {
     stderr.writeln('Error: ${e.message}');
-    if (e is ApiException && e.isForbidden) {
+    final String msg = e.message.toLowerCase();
+    if (msg.contains('re-auth') || msg.contains('token expired')) {
+      stderr.writeln('Hint: the backend\'s GitHub connection is disconnected. The change '
+          'was saved, but ARB files can\'t sync until you reconnect GitHub in the dashboard '
+          '(project → Repo → reconnect).');
+    } else if (e is ApiException && e.isForbidden) {
       stderr.writeln('Hint: your token may lack the required scope, or the plan '
           'limit was reached.');
-    }
-    if (e is ApiException && e.isAuth) {
+    } else if (e is ApiException && e.isAuth) {
       stderr.writeln('Hint: run `fl login --token flk_live_...` or set \$FL_API_TOKEN.');
     }
     exit(1);
@@ -184,7 +188,10 @@ class ProjectsCommand extends Command<int> with _ApiCommand {
         return 0;
       }
       for (final ProjectSummary p in projects) {
-        stdout.writeln('${p.name}  (id ${p.id})');
+        final String warn = p.gitNeedsReauth
+            ? '  ⚠️  git sync disconnected — reconnect GitHub in the dashboard'
+            : '';
+        stdout.writeln('${p.name}  (id ${p.id})$warn');
         for (final FlavorSummary f in p.flavors) {
           final String base =
               f.baseLanguage != null ? '  [base ${f.baseLanguage}]' : '';

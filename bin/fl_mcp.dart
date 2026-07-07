@@ -29,7 +29,7 @@ import 'package:flutter_localisation/src/management/project_resolver.dart';
 
 const String _protocolVersion = '2024-11-05';
 const String _serverName = 'flutter-localisation';
-const String _serverVersion = '2.3.0';
+const String _serverVersion = '2.4.0';
 
 late final ManagementClient _client;
 late final ProjectResolver _resolver;
@@ -246,6 +246,10 @@ Future<void> _callTool(final Object? id, final Map<String, dynamic> params) asyn
                   'name': p.name,
                   'id': p.id,
                   'workspace': p.workspace,
+                  if (p.gitNeedsReauth)
+                    'warning':
+                        'Git sync is disconnected — reconnect GitHub in the dashboard; '
+                            'ARB files are not updating.',
                   'flavors': p.flavors
                       .map((final FlavorSummary f) => <String, dynamic>{
                             'name': f.name,

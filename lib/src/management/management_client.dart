@@ -193,6 +193,7 @@ class ProjectSummary {
     required this.name,
     required this.workspace,
     required this.flavors,
+    this.gitNeedsReauth = false,
   });
 
   final int id;
@@ -200,11 +201,16 @@ class ProjectSummary {
   final String workspace;
   final List<FlavorSummary> flavors;
 
+  /// True when the backend's git provider token is dead and needs reconnecting in the
+  /// dashboard — ARB pushes are failing, so `pull` won't see new strings.
+  final bool gitNeedsReauth;
+
   factory ProjectSummary.fromJson(final Map<String, dynamic> j) =>
       ProjectSummary(
         id: j['id'] as int,
         name: (j['name'] ?? '') as String,
         workspace: (j['workspace'] ?? '') as String,
+        gitNeedsReauth: (j['git_needs_reauth'] ?? false) as bool,
         flavors: ((j['flavors'] ?? const <dynamic>[]) as List)
             .map((final e) =>
                 FlavorSummary.fromJson(e as Map<String, dynamic>),)
@@ -319,6 +325,16 @@ class ManagementClient {
   /// Delete a single translation (one locale of a key).
   Future<void> deleteTranslation(final int translationId) async {
     await _send('DELETE', '/api/translations/$translationId/delete/');
+  }
+
+  /// Delete an entire key (all locales) by name — removes the TranslationKey itself,
+  /// not just its translations.
+  Future<void> deleteKey(final int projectId, final String key) async {
+    await _send(
+      'POST',
+      '/api/projects/$projectId/translation_keys/delete/',
+      body: <String, dynamic>{'key': key},
+    );
   }
 
   /// AI-translate and persist a set of translations (uses the batch endpoint,
