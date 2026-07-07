@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.5.0] - 2026-07-07
+### Changed
+- **The `fl` CLI and `fl_mcp` MCP server moved to a new package,
+  [`flutter_localisation_cli`](https://pub.dev/packages/flutter_localisation_cli).** This keeps
+  the runtime library lean (no `args` dependency) and lets the tooling install and run without
+  the Flutter SDK. If you used `dart pub global activate flutter_localisation` for `fl`/`fl_mcp`,
+  switch to `dart pub global activate flutter_localisation_cli`. The runtime API and the
+  `flutter_localisation` / `generate` codegen executables are unchanged.
+
+
 ## [2.4.1] - 2026-07-07
 ### Fixed
 - **MCP launch command in the docs.** `dart pub global run flutter_localisation:fl_mcp` fails

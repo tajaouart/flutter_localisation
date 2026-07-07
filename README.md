@@ -343,79 +343,24 @@ TranslationService(config: TranslationConfig(...))
 
 ---
 
-## Manage from the terminal & Claude (`fl` CLI + MCP)
+## Manage from the terminal & Claude
 
-Add, edit, delete, and AI-translate keys without opening the dashboard — from your terminal or
-from Claude — then `git pull` the ARBs. Both tools ship with this package and use a scoped
-`flk_live_…` API token you create in the dashboard under **API Keys**.
-
-> The token is read from `--token`, the `FL_API_TOKEN` environment variable, or
-> `~/.config/flutterlocalisation/credentials.json` (chmod 600). It is **never** embedded in your
-> app — keep it on your dev machine / CI / MCP host only. Give it just the scopes it needs
-> (`strings:read`, `strings:write`, `translate`).
-
-### CLI
+Add, edit, delete and AI-translate keys from the shell or from Claude with the companion
+**[`flutter_localisation_cli`](https://pub.dev/packages/flutter_localisation_cli)** package
+(pure Dart — no Flutter SDK needed):
 
 ```bash
-dart pub global activate flutter_localisation
+dart pub global activate flutter_localisation_cli
 
-# Project config: flutterlocalisation.json in your project root
-# { "base_url": "https://api.flutterlocalisation.com", "project_id": 31, "flavor": "production" }
-
-fl login --token flk_live_xxx           # stores the token (chmod 600)
-fl projects                             # list your projects (pick by name, not id)
-fl add greeting --value "Hello" --translate   # add key + AI-fill every other locale
-fl edit greeting --locale fr --value "Bonjour"
-fl translate greeting --missing         # fill only empty locales
-fl status                               # completion % per locale
-fl delete greeting                      # all locales (or --locale fr for one)
-fl pull                                 # git pull the ARB repo
+fl login --token flk_live_xxx          # token from the dashboard -> API Keys
+fl add greeting --value "Hello" -t     # add + AI-translate all locales
+fl pull                                # git pull the regenerated ARBs
 ```
 
-You don't need to know a numeric project id. `flutterlocalisation.json` may set
-`"project": "<name>"` (or omit it entirely if the workspace has one project), and any command
-takes `--project "<name or id>"`.
+It also ships an MCP server (`fl_mcp`) so Claude can manage your translations. See the
+[flutter_localisation_cli README](https://pub.dev/packages/flutter_localisation_cli) for the
+full CLI reference and MCP setup.
 
-Add `--dry-run` to preview any command, or `--json` for machine-readable output. Run
-`dart run flutter_localisation:fl --help` from within a project without global activation.
-
-### MCP server (Claude)
-
-`fl_mcp` is a Model Context Protocol server so Claude can manage your translations. Mutating
-tools are **preview-by-default** — they only write when called with `apply: true`.
-
-After `dart pub global activate flutter_localisation`, the `fl_mcp` executable is installed in
-`~/.pub-cache/bin`. Use that shim directly — **do not** use `dart pub global run …`, which
-cannot launch executables from a package that depends on the Flutter SDK.
-
-**Claude Code:**
-
-```bash
-claude mcp add flutter-localisation --env FL_API_TOKEN=flk_live_xxx -- fl_mcp
-```
-
-**Claude Desktop** (use the absolute path — Desktop's PATH often omits `~/.pub-cache/bin`):
-
-```json
-{
-  "mcpServers": {
-    "flutter-localisation": {
-      "command": "/Users/you/.pub-cache/bin/fl_mcp",
-      "env": { "FL_API_TOKEN": "flk_live_xxx" }
-    }
-  }
-}
-```
-
-(`fl_mcp` alone works if `~/.pub-cache/bin` is on your PATH.)
-
-The token is workspace-scoped, so Claude discovers projects itself — no numeric id needed. Ask
-things like *"list my projects"*, then *"in the Shopping App, add a key `checkout_button` =
-'Buy now' and translate it to all locales."* Optionally set `FL_PROJECT` / `FL_FLAVOR` for a
-default. Tools: `list_projects`, `list_status`, `add_string`, `edit_string`, `delete_string`,
-`translate_key` (each takes an optional `project`/`flavor` by name).
-
----
 
 ## Team Collaboration (Paid)
 
