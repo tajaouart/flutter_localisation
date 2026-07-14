@@ -370,12 +370,19 @@ Future<void> _ensureL10nFile(
 ) async {
   if (!await l10nFile.exists()) {
     _logger.info('l10n.yaml does not exist. Creating a new one.');
+    // use-escaping: false — matches Flutter gen-l10n's own default. With
+    // escaping ON, a lone apostrophe in a translation (French "l'appareil",
+    // "d'utilisation", Italian "l'app") is treated as an ICU quote delimiter
+    // and fails codegen with "Unmatched single quotes". Almost all real-world
+    // copy contains apostrophes and almost none needs ICU literal-escaping, so
+    // false is the safe default. Existing l10n.yaml files are preserved (only
+    // arb-dir is rewritten below), so anyone who needs escaping can opt back in.
     await l10nFile.writeAsString('''
 arb-dir: $flavorsFolder/$flavor
 output-dir: lib/localization/generated
 output-localization-file: app_localizations.dart
 nullable-getter: false
-use-escaping: true
+use-escaping: false
 ''');
     return;
   }

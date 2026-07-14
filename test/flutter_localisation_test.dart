@@ -457,6 +457,62 @@ void main() {
 
     // Check if the arb-dir was correctly updated
     expect(updatedContent.contains('arb-dir: lib/l10n/$flavor'), isTrue);
+
+    // A freshly-created l10n.yaml must disable ICU escaping so that natural
+    // apostrophes in translations don't break codegen (see regression test
+    // below). Regression guard for the "Unmatched single quotes" bug.
+    expect(updatedContent, contains('use-escaping: false'));
+  });
+
+  test('generates successfully when a translation contains an apostrophe',
+      () async {
+    // Regression: with use-escaping: true, a lone apostrophe (French "l'",
+    // "d'"...) is parsed as an ICU quote delimiter and gen-l10n fails with
+    // "Unmatched single quotes". The generated l10n.yaml now defaults to
+    // use-escaping: false, so this must compile cleanly.
+    final String flavor = 'apos_flavor';
+
+    if (await l10nFile.exists()) {
+      await l10nFile.delete();
+    }
+
+    final Directory dir =
+        Directory(path.join(testDir.path, 'lib/l10n/$flavor'));
+    await dir.create(recursive: true);
+    // Template (en) + a French locale, both carrying lone apostrophes.
+    await File(path.join(dir.path, 'app_en.arb')).writeAsString(
+      '{"@@locale":"en","terms":"Terms of use","hint":"Don\'t worry"}',
+    );
+    await File(path.join(dir.path, 'app_fr.arb')).writeAsString(
+      '{"@@locale":"fr","terms":"Conditions d\'utilisation",'
+      '"hint":"Suivre la langue de l\'appareil"}',
+    );
+
+    final ProcessResult result = await Process.run(
+      'dart',
+      <String>['run', scriptPath, 'lib/l10n', flavor],
+      workingDirectory: testDir.path,
+    );
+
+    expect(result.exitCode, 0,
+        reason: 'Codegen must not fail on apostrophes.\n${result.stderr}');
+    expect('${result.stdout}${result.stderr}',
+        isNot(contains('Unmatched single quotes')));
+
+    // The apostrophe must survive into the generated French localizations.
+    final File frGen = File(path.join(
+      testDir.path,
+      'lib/localization/generated/app_localizations_fr.dart',
+    ));
+    expect(await frGen.exists(), isTrue,
+        reason: 'French localizations should be generated');
+    // The generated Dart string-escapes the apostrophe (d\'utilisation), so
+    // match escaping-agnostically: the French words must be present and the
+    // getter emitted.
+    final String frContent = await frGen.readAsString();
+    expect(frContent, contains('Conditions d'));
+    expect(frContent, contains('utilisation'));
+    expect(frContent, contains('String get terms'));
   });
 
   test('Updates l10n.yaml with correct flavor', () async {

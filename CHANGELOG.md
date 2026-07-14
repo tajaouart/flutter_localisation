@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.5.1] - 2026-07-14
+### Fixed
+- **Apostrophes no longer break codegen.** A freshly-created `l10n.yaml` now defaults to
+  `use-escaping: false` (matching Flutter gen-l10n's own default). With escaping enabled, a
+  lone apostrophe in a translation — French `l'appareil` / `Conditions d'utilisation`, Italian
+  `l'app` — was parsed as an ICU quote delimiter and failed generation with *"Unmatched single
+  quotes"*. Since almost all real-world copy contains apostrophes and almost none needs ICU
+  literal-escaping, `false` is the safe default. Existing `l10n.yaml` files are untouched (only
+  `arb-dir` is rewritten), so projects that rely on escaping can keep `use-escaping: true`.
+
 ## [2.5.0] - 2026-07-07
 ### Changed
 - **The `fl` CLI and `fl_mcp` MCP server moved to a new package,
