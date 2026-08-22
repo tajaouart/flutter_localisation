@@ -14,6 +14,13 @@ void main() {
   setUp(() {
     mockService = MockTranslationService();
     when(mockService.isLoggingEnabled).thenReturn(false);
+
+    // The translator asks for the most specific locale first (`en-US`, then
+    // `en`), so every test would otherwise have to stub keys it does not care
+    // about. Specific stubs registered inside a test still win over this one.
+    when(mockService.getOverride(any, any)).thenReturn(null);
+    when(mockService.getAllOverridesForLocale(any))
+        .thenReturn(<String, String>{});
   });
 
   Widget buildTestWidget(final Widget child) {
@@ -546,6 +553,92 @@ void main() {
       );
 
       expect(result, equals('Simple message'));
+    });
+  });
+
+  group('Translator - regional and script variants', () {
+    // Bare Localizations rather than MaterialApp: the app widget asserts that
+    // every delegate supports the locale, and DefaultMaterialLocalizations
+    // only ships English — which says nothing about locale resolution here.
+    Widget buildFor(final Locale locale, final Widget child) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: Localizations(
+            locale: locale,
+            delegates: const <LocalizationsDelegate<dynamic>>[
+              DefaultWidgetsLocalizations.delegate,
+              DefaultMaterialLocalizations.delegate,
+            ],
+            child: child,
+          ),
+        );
+
+    Future<String?> translateIn(
+      final WidgetTester tester,
+      final Locale locale,
+      final String key,
+    ) async {
+      String? result;
+      await tester.pumpWidget(
+        buildFor(
+          locale,
+          Builder(
+            builder: (final BuildContext context) {
+              result = Translator(
+                context: context,
+                service: mockService,
+                generatedLocalizations: null,
+              ).translate(key, <String, dynamic>{}, () => 'Fallback');
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      return result;
+    }
+
+    testWidgets('a Brazilian device reads pt-BR, not pt',
+        (final WidgetTester tester) async {
+      when(mockService.getOverride('pt-BR', 'hello')).thenReturn('Oi');
+      when(mockService.getOverride('pt', 'hello')).thenReturn('Ol\u00e1');
+      when(mockService.getAllOverridesForLocale('pt-BR'))
+          .thenReturn(<String, String>{'hello': 'Oi'});
+
+      expect(await translateIn(tester, const Locale('pt', 'BR'), 'hello'), 'Oi');
+    });
+
+    testWidgets('falls back to the base language when no variant is published',
+        (final WidgetTester tester) async {
+      when(mockService.getOverride('pt', 'hello')).thenReturn('Ol\u00e1');
+      when(mockService.getAllOverridesForLocale('pt'))
+          .thenReturn(<String, String>{'hello': 'Ol\u00e1'});
+
+      expect(
+        await translateIn(tester, const Locale('pt', 'BR'), 'hello'),
+        'Ol\u00e1',
+      );
+    });
+
+    testWidgets('reads a variant cached under the ARB underscore spelling',
+        (final WidgetTester tester) async {
+      when(mockService.getOverride('pt_BR', 'hello')).thenReturn('Oi');
+      when(mockService.getAllOverridesForLocale('pt_BR'))
+          .thenReturn(<String, String>{'hello': 'Oi'});
+
+      expect(await translateIn(tester, const Locale('pt', 'BR'), 'hello'), 'Oi');
+    });
+
+    testWidgets('separates the Chinese scripts',
+        (final WidgetTester tester) async {
+      when(mockService.getOverride('zh-Hant', 'hello')).thenReturn('\u4f60\u597d\uff08\u7e41\uff09');
+      when(mockService.getOverride('zh', 'hello')).thenReturn('\u4f60\u597d');
+      when(mockService.getAllOverridesForLocale('zh-Hant'))
+          .thenReturn(<String, String>{'hello': '\u4f60\u597d\uff08\u7e41\uff09'});
+
+      const Locale traditional = Locale.fromSubtags(
+        languageCode: 'zh',
+        scriptCode: 'Hant',
+      );
+      expect(await translateIn(tester, traditional, 'hello'), '\u4f60\u597d\uff08\u7e41\uff09');
     });
   });
 }

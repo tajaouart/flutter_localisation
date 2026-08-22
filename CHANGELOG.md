@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.6.0] - 2026-08-22
+### Fixed
+- **Live-update overrides now reach regional and script locales.** The lookup
+  used `locale.languageCode` alone, so a device on `pt-BR` read the European
+  Portuguese overrides, and a project holding only `pt-BR` received none at all
+  while the dashboard showed them published. Resolution now walks
+  `zh-Hant-HK` → `zh-Hant` → `zh-HK` → `zh`, accepts either separator (the
+  project stores `pt-BR`; an ARB's `@@locale` is `pt_BR`), and ends at the base
+  language so a variant device still gets base-language copy. The whole-locale
+  fetch behind the ICU processor resolves through the same chain, so a screen
+  can no longer take one string from `pt-BR` and the rest from `pt`.
+
 ## [2.5.1] - 2026-07-14
 ### Fixed
 - **Apostrophes no longer break codegen.** A freshly-created `l10n.yaml` now defaults to

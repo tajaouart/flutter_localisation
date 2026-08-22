@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
+import 'package:flutter_localisation/src/api/locale_keys.dart';
 import 'package:flutter_localisation/src/icu_message_processor.dart';
 
 /// Main class that handles translation resolution with FlutterLocalisation overrides.
@@ -31,8 +32,7 @@ class Translator {
     final String Function() fallbackGenerator,
   ) {
     final Locale locale = Localizations.localeOf(context);
-    final String? overrideTemplate =
-        service.getOverride(locale.languageCode, key);
+    final String? overrideTemplate = _overrideFor(locale, key);
 
     if (overrideTemplate != null) {
       // An override exists, process it efficiently.
@@ -45,6 +45,28 @@ class Translator {
 
     // No override found, use the standard generated translation.
     return fallbackGenerator();
+  }
+
+  /// The override for [key], resolved from the most specific locale the cache
+  /// actually holds — `pt-BR` before `pt`, `zh-Hant` before `zh`.
+  String? _overrideFor(final Locale locale, final String key) {
+    for (final String candidate in localeCacheKeys(locale)) {
+      final String? template = service.getOverride(candidate, key);
+      if (template != null) return template;
+    }
+    return null;
+  }
+
+  /// Every override the cache holds for [locale], from the same resolved key
+  /// the single-key lookup uses — otherwise a Brazilian device could take its
+  /// first string from `pt-BR` and the rest of the screen from `pt`.
+  Map<String, String> _overridesFor(final Locale locale) {
+    for (final String candidate in localeCacheKeys(locale)) {
+      final Map<String, String> overrides =
+          service.getAllOverridesForLocale(candidate);
+      if (overrides.isNotEmpty) return overrides;
+    }
+    return <String, String>{};
   }
 
   /// Efficiently processes a FlutterLocalisation override string.
@@ -64,7 +86,7 @@ class Translator {
       if (_cachedProcessor == null || _cachedProcessor?.locale != locale) {
         // Fetch ALL overrides for the current locale at once.
         final Map<String, String> allOverridesForLocale =
-            service.getAllOverridesForLocale(locale.languageCode);
+            _overridesFor(locale);
 
         // Create a single, powerful processor for all of them.
         _cachedProcessor = ICUMessageProcessor(
@@ -73,7 +95,7 @@ class Translator {
           <String, dynamic>{}, // Metadata can be added later if needed.
         );
         _log(
-          'Created and cached ICUMessageProcessor for ${locale.languageCode}',
+          'Created and cached ICUMessageProcessor for ${locale.toLanguageTag()}',
         );
       }
 
