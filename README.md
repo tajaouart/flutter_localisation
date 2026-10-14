@@ -68,7 +68,7 @@ export PATH="$PATH":"$HOME/.pub-cache/bin"
 ```yaml
 # pubspec.yaml
 dependencies:
-  flutter_localisation: ^2.1.2
+  flutter_localisation: ^2.6.0
   flutter_localizations:
     sdk: flutter
   intl: any
@@ -354,8 +354,12 @@ dart pub global activate flutter_localisation_cli
 
 fl login --token flk_live_xxx          # token from the dashboard -> API Keys
 fl add greeting --value "Hello" -t     # add + AI-translate all locales
-fl pull                                # git pull the regenerated ARBs
+fl languages add fr de it -t           # add locales, AI-fill every key
+fl pull                                # sync the regenerated ARBs into arb_dir
 ```
+
+`fl` talks to the service; the `flutter_localisation arbs` command above only runs gen-l10n on
+the ARBs already on disk. After `fl pull`, run `flutter gen-l10n` (or `flutter_localisation arbs <flavor>`).
 
 It also ships an MCP server (`fl_mcp`) so Claude can manage your translations. See the
 [flutter_localisation_cli README](https://pub.dev/packages/flutter_localisation_cli) for the
@@ -421,13 +425,14 @@ TranslationService(
 | Feature | Free | Starter | Growth | Business |
 |---------|------|---------|--------|----------|
 | **Projects** | 2 | 6 | 20 | Unlimited |
-| **Translations** | 1,000 | 15,000 | 75,000 | 300,000 |
+| **Translation keys** | 500 | 15,000 | 75,000 | 300,000 |
 | **Team Members** | 3 | 8 | 25 | 100 |
 | **Live Updates** | ✗ | ✓ | ✓ | ✓ |
-| **Git Integration** | Manual | ✓ | ✓ | ✓ |
-| **AI Translation** | Limited | ✓ | ✓ | ✓ |
+| **Git Integration** | ✓ | ✓ | ✓ | ✓ |
+| **AI Translation** | ✓ | ✓ | ✓ | ✓ |
 
-Visit [flutterlocalisation.com/pricing](https://flutterlocalisation.com/pricing) for current pricing.
+Limits count unique keys, not keys × languages: adding a language is free on every plan.
+Starter is 29 EUR/month or 249 EUR/year; see [flutterlocalisation.com](https://flutterlocalisation.com/#pricing) for all plans. Businesses can pay by invoice and bank transfer from the Billing tab.
 
 ---
 
