@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.6.1] - 2026-10-15
+### Changed
+- README only: current version pin, key-based plan limits (500 keys on Free,
+  languages free on every plan), yearly and invoice billing, and the `fl` CLI
+  steps next to the `arbs` command. No code change.
+
 ## [2.6.0] - 2026-08-22
 ### Fixed
 - **Live-update overrides now reach regional and script locales.** The lookup
