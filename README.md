@@ -365,6 +365,13 @@ It also ships an MCP server (`fl_mcp`) so Claude can manage your translations. S
 [flutter_localisation_cli README](https://pub.dev/packages/flutter_localisation_cli) for the
 full CLI reference and MCP setup.
 
+To teach a coding agent the whole workflow (bulk imports, `fl doctor` after a Flutter upgrade,
+live updates, never editing generated files by hand), install the agent skill in your app:
+
+```bash
+npx skills add tajaouart/flutter_localisation_cli --skill flutter-localisation
+```
+
 
 ## Team Collaboration (Paid)
 
