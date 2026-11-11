@@ -5,13 +5,20 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'home_page.dart';
 import 'localization/generated/app_localizations.dart';
 
+// Live updates need a key from your workspace settings:
+// flutter run --dart-define=FL_SECRET_KEY=sk_live_... --dart-define=FL_PROJECT_ID=<id>
+// Without them the app runs on the bundled ARBs only.
+const _secretKey = String.fromEnvironment('FL_SECRET_KEY');
+const _projectId = int.fromEnvironment('FL_PROJECT_ID');
+const _flavorName = String.fromEnvironment('FL_FLAVOR', defaultValue: 'Default');
+
 final _flutterLocalisationService = TranslationService(
   config: const TranslationConfig(
     enableLogging: true,
-    secretKey: "sk_live_Z095M95SsXi-LqI39vduaa9Vhc-Zjug8oXjnST-DGNs",
+    secretKey: _secretKey == '' ? null : _secretKey,
     supportedLocales: ['en', 'es'],
-    projectId: 31,
-    flavorName: 'Default',
+    projectId: _projectId == 0 ? null : _projectId,
+    flavorName: _flavorName,
   ),
 );
 

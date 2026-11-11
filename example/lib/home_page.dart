@@ -116,7 +116,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('$_cartItems items'),
+                  child: Text(context.tr.itemsInCart(_cartItems)),
                 ),
                 ElevatedButton(
                   onPressed:

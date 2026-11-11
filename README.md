@@ -186,7 +186,7 @@ void main() async {
   final translationService = TranslationService(
     config: TranslationConfig.paidUser(
       secretKey: 'sk_live_your_key_here',
-      projectId: 31,
+      projectId: 123,
       flavorName: 'production',
       supportedLocales: ['en', 'es', 'fr'],
       enableLogging: true,
