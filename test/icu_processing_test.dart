@@ -680,7 +680,10 @@ void main() {
       final Map<String, dynamic>? metadata =
           processor.getPlaceholderMetadata('message');
       expect(metadata, isNotNull);
-      expect((metadata!['name'] as Map<String, dynamic>)['type'], equals('String'));
+      expect(
+        (metadata!['name'] as Map<String, dynamic>)['type'],
+        equals('String'),
+      );
     });
 
     test('getPlaceholderMetadata prioritizes runtime metadata', () {
@@ -708,7 +711,10 @@ void main() {
 
       final Map<String, dynamic>? metadata =
           processor.getPlaceholderMetadata('message');
-      expect((metadata!['name'] as Map<String, dynamic>)['type'], equals('int'));
+      expect(
+        (metadata!['name'] as Map<String, dynamic>)['type'],
+        equals('int'),
+      );
 
       ICUMessageProcessor.updateRuntimeData();
     });

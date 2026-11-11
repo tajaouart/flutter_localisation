@@ -494,18 +494,28 @@ void main() {
       workingDirectory: testDir.path,
     );
 
-    expect(result.exitCode, 0,
-        reason: 'Codegen must not fail on apostrophes.\n${result.stderr}',);
-    expect('${result.stdout}${result.stderr}',
-        isNot(contains('Unmatched single quotes')),);
+    expect(
+      result.exitCode,
+      0,
+      reason: 'Codegen must not fail on apostrophes.\n${result.stderr}',
+    );
+    expect(
+      '${result.stdout}${result.stderr}',
+      isNot(contains('Unmatched single quotes')),
+    );
 
     // The apostrophe must survive into the generated French localizations.
-    final File frGen = File(path.join(
-      testDir.path,
-      'lib/localization/generated/app_localizations_fr.dart',
-    ),);
-    expect(await frGen.exists(), isTrue,
-        reason: 'French localizations should be generated',);
+    final File frGen = File(
+      path.join(
+        testDir.path,
+        'lib/localization/generated/app_localizations_fr.dart',
+      ),
+    );
+    expect(
+      await frGen.exists(),
+      isTrue,
+      reason: 'French localizations should be generated',
+    );
     // The generated Dart string-escapes the apostrophe (d\'utilisation), so
     // match escaping-agnostically: the French words must be present and the
     // getter emitted.

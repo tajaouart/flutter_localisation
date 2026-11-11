@@ -106,8 +106,7 @@ Future<void> main(final List<String> args) async {
     final List<FileSystemEntity> generatedFiles = outputDirectory
         .listSync()
         .where(
-          (final FileSystemEntity f) =>
-              f is File && f.path.endsWith('.dart'),
+          (final FileSystemEntity f) => f is File && f.path.endsWith('.dart'),
         )
         .toList();
 

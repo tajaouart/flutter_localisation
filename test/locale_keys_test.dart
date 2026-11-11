@@ -41,9 +41,12 @@ void main() {
       expect(
         localeCacheKeys(hongKong),
         <String>[
-          'zh-Hant-HK', 'zh_Hant_HK',
-          'zh-Hant', 'zh_Hant',
-          'zh-HK', 'zh_HK',
+          'zh-Hant-HK',
+          'zh_Hant_HK',
+          'zh-Hant',
+          'zh_Hant',
+          'zh-HK',
+          'zh_HK',
           'zh',
         ],
       );
