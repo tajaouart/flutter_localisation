@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0] - 2026-11-11
+### Fixed
+- **A live update shows as soon as it lands.** `TranslationService` is now a `ChangeNotifier`
+  and `TranslationProvider` rebuilds its dependents when an update is applied or the cache is
+  cleared. Before, the fetch finished after the first frame and the new strings only appeared
+  on the next launch.
+
+### Changed
+- The package imports `package:flutter/widgets.dart` only, never Material, so the move of
+  Material and Cupertino to the `material_ui` / `cupertino_ui` packages does not affect it.
+- `dispose()` can be called more than once.
+
 ## [2.6.1] - 2026-10-15
 ### Changed
 - README only: current version pin, key-based plan limits (500 keys on Free,

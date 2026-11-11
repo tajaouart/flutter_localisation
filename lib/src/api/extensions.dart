@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
 
 /// Extension that adds convenient accessors to the BuildContext.

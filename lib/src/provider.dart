@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
 
 /// Provider that makes the TranslationService available throughout the widget tree.
-class TranslationProvider extends InheritedWidget {
+///
+/// Dependents rebuild when [service] applies a live update.
+class TranslationProvider extends InheritedNotifier<TranslationService> {
   /// The translation service instance
-  final TranslationService service;
+  TranslationService get service => notifier!;
 
   /// The generated Flutter localizations (AppLocalizations)
   final dynamic generatedLocalizations;
@@ -20,11 +22,11 @@ class TranslationProvider extends InheritedWidget {
   /// )
   /// ```
   const TranslationProvider({
-    required this.service,
+    required final TranslationService service,
     required this.generatedLocalizations,
     required super.child,
     super.key,
-  });
+  }) : super(notifier: service);
 
   static TranslationProvider of(final BuildContext context) {
     final TranslationProvider? result =
@@ -42,9 +44,10 @@ class TranslationProvider extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(final TranslationProvider oldWidget) {
-    // Rebuild widgets that depend on this provider if the service or localizations change.
-    return service != oldWidget.service ||
+  bool updateShouldNotify(
+    covariant final TranslationProvider oldWidget,
+  ) {
+    return super.updateShouldNotify(oldWidget) ||
         generatedLocalizations != oldWidget.generatedLocalizations;
   }
 }

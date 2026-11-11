@@ -68,7 +68,7 @@ export PATH="$PATH":"$HOME/.pub-cache/bin"
 ```yaml
 # pubspec.yaml
 dependencies:
-  flutter_localisation: ^2.6.1
+  flutter_localisation: ^2.7.0
   flutter_localizations:
     sdk: flutter
   intl: any

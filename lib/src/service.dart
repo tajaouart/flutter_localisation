@@ -7,7 +7,9 @@ import 'package:flutter_localisation/src/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class TranslationService {
+/// Notifies listeners when a live update lands, so a [TranslationProvider]
+/// rebuilds the screen without waiting for the next launch.
+class TranslationService extends ChangeNotifier {
   final TranslationConfig _config;
   final http.Client _httpClient;
   final ApiRepository _repository; // This can now be final, which is better
@@ -15,6 +17,7 @@ class TranslationService {
   CacheManager? _cache;
   bool _loadingStates = false;
   bool _initialized = false;
+  bool _disposed = false;
   SharedPreferences? prefs;
   final String? _embeddedArbTimestamp;
 
@@ -94,9 +97,18 @@ class TranslationService {
   /// Set the last cache update timestamp in SharedPreferences
 
   /// Clean up resources, like the HTTP client.
+  @override
   void dispose() {
+    // Apps and tests dispose twice; ChangeNotifier would throw on the second.
+    if (_disposed) return;
+    _disposed = true;
     _httpClient.close();
     _log('Service disposed.');
+    super.dispose();
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
   }
 
   bool get isReady => _initialized;
@@ -121,6 +133,7 @@ class TranslationService {
   Future<void> clearCache() async {
     if (_cache == null) return;
     await _cache!.clearAll();
+    _notify();
     _log('Cache cleared.');
   }
 
@@ -191,6 +204,7 @@ class TranslationService {
       }
 
       if (totalUpdated > 0) {
+        _notify();
         _log(
           'Successfully updated to timestamp $newTimestamp with $totalUpdated total translations.',
         );
