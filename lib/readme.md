@@ -39,7 +39,7 @@ dart pub run saas_translations:generate
 
 ```dart
 import 'package:saas_translations/saas_translations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:my_app/l10n/app_localizations.dart';
 
 class MyApp extends StatefulWidget {
   @override
