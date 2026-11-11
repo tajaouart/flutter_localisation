@@ -13,64 +13,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
       - uses: actions/checkout@v4
 
-      # Cache Flutter SDK
-      - name: Cache Flutter SDK
-        uses: actions/cache@v3
+      # Pinned: the formatter's output changes between SDK releases, so the
+      # format check only means something against one version.
+      - uses: subosito/flutter-action@v2
         with:
-          path: flutter
-          key: ${{ runner.os }}-flutter-${{ hashFiles('flutter/bin/internal/engine.version') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-
-      # Install Flutter
-      - name: Install Flutter
-        run: |
-          if [ ! -d "flutter/bin" ]; then
-            echo "Cache miss: Cloning Flutter SDK..."
-            git clone https://github.com/flutter/flutter.git -b stable flutter
-          else
-            echo "Cache hit: Using cached Flutter SDK."
-          fi
-          echo "$PWD/flutter/bin" >> $GITHUB_PATH
-          export PATH="$PATH:$PWD/flutter/bin"
-          flutter config --no-analytics
-          flutter doctor -v
-
-      # Cache Pub Dependencies
-      - name: Cache Pub Dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-cache-${{ hashFiles('pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-cache-
-
-      # Setup Dart
-      - uses: dart-lang/setup-dart@v1
-        with:
+          flutter-version: 3.47.9
           channel: stable
+          cache: true
 
-      # Remove Example Folder from Build
-      - name: Remove Example Folder from Build
-        run: rm -rf example
-
-      # Disbale analytics
-      - name: Disbale analytics
-        run: flutter config --no-analytics
-
-      # Install dependencies
-      - name: Install dependencies
-        run: dart pub get
-
-      # Analyze code
-      - name: Analyze code
-        run: dart analyze test && dart analyze bin
-        env:
-          PUB_LOG: verbose
-
-      # Run tests
-      - name: Run tests
-        run: dart test test
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib bin test
+      - run: flutter analyze
+      - run: flutter test
