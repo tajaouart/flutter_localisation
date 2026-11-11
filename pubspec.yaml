@@ -15,6 +15,18 @@ topics:
   - l10n
   - intl
 
+screenshots:
+  - description: Switching between seven languages, including right to left Arabic.
+    path: screenshots/languages.gif
+  - description: Typed strings with live updates marked in the example app.
+    path: screenshots/home.png
+  - description: Arabic plurals and right to left layout.
+    path: screenshots/arabic.png
+  - description: Plural categories, select and nested messages.
+    path: screenshots/plurals.png
+  - description: Dates, currencies, compact numbers and the live update panel.
+    path: screenshots/live_updates.png
+
 environment:
   sdk: ^3.4.1
 

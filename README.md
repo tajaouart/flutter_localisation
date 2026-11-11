@@ -5,70 +5,39 @@
 [![likes](https://img.shields.io/pub/likes/flutter_localisation)](https://pub.dev/packages/flutter_localisation/score)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-**Type-safe Flutter localization (i18n / l10n) from your ARB files** — code generation, multi-flavor support, plurals and parameters, plus optional over-the-air translation updates so you can ship copy changes without an app release.
+Type-safe Flutter localization from your ARB files, with live translation
+updates. Fix a typo or reword a screen from the
+[flutterlocalisation.com](https://flutterlocalisation.com) dashboard and your
+users see it on the next refresh, without a store release.
 
-A complete Flutter localization solution that combines:
-- **CLI tool** for generating type-safe localization code from ARB files
-- **Live updates** via [flutterlocalisation.com](https://flutterlocalisation.com) (optional, paid feature)
-- **Flavor-based** localization structure for multi-environment apps
+- `context.tr.hello('Sam')`: generated, typed methods for every key.
+- Plurals with every category (`zero`, `one`, `two`, `few`, `many`), `select`,
+  nested messages, dates, currencies and compact numbers.
+- Flavors: one ARB folder per brand or environment.
+- Live updates render exactly like the bundled string, fall back to it when
+  offline, and are cached on the device.
+- Works offline and for free with local ARB files. Live updates and the
+  dashboard are optional.
 
-> Native iOS app with an Xcode String Catalog? The same live updates are in [flutter_localisation_ios](https://github.com/tajaouart/flutter_localisation_ios).
+<table>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/tajaouart/flutter_localisation/master/screenshots/languages.gif" width="220" alt="Switching between seven languages"></td>
+    <td><img src="https://raw.githubusercontent.com/tajaouart/flutter_localisation/master/screenshots/arabic.png" width="220" alt="Arabic, right to left, with a live plural"></td>
+    <td><img src="https://raw.githubusercontent.com/tajaouart/flutter_localisation/master/screenshots/plurals.png" width="220" alt="Plural categories and select messages"></td>
+    <td><img src="https://raw.githubusercontent.com/tajaouart/flutter_localisation/master/screenshots/live_updates.png" width="220" alt="Dates, numbers and the live update panel"></td>
+  </tr>
+</table>
 
-> 🧰 **Free online tools (no signup):** [ARB Editor](https://flutterlocalisation.com/tools/arb-editor) · [ARB Diff](https://flutterlocalisation.com/tools/arb-diff) · [l10n.yaml Generator](https://flutterlocalisation.com/tools/l10n-yaml-generator) · [Locale Explorer](https://flutterlocalisation.com/tools/flutter-locale-explorer)
+The [example app](./example): seven languages, right to left Arabic, every
+message type, and strings marked **Live** where an update replaced the bundled
+copy.
 
-## See it in action
+> Native iOS app with an Xcode String Catalog? The same live updates are in
+> [flutter_localisation_ios](https://github.com/tajaouart/flutter_localisation_ios).
 
-[![FlutterLocalisation translation management dashboard](https://flutterlocalisation.com/assets/screenshots/dashboard-main.png?v=2)](https://flutterlocalisation.com)
-
-**Three steps to ship multilingual apps:**
-
-| 1. Connect your repo | 2. Translate with AI | 3. Sync to Git |
-| :---: | :---: | :---: |
-| ![Connect your GitHub, GitLab or Bitbucket repository](https://flutterlocalisation.com/assets/screenshots/workflow-git-connect-trim.png) | ![Manage and AI-translate keys with your team](https://flutterlocalisation.com/assets/screenshots/workflow-member-creation-trim.png) | ![Push translations back to your repo automatically](https://flutterlocalisation.com/assets/screenshots/workflow-github-arb-trim.png) |
-
-| Visual translation editor | Team collaboration |
-| :---: | :---: |
-| ![Visual ARB translation editor](https://flutterlocalisation.com/assets/screenshots/project-editor.png?v=2) | ![Invite translators and reviewers with role-based permissions](https://flutterlocalisation.com/assets/screenshots/team-members.png?v=2) |
-
-## Features
-
-### Free (Local Usage)
-- Generate strongly typed localization classes from ARB files
-- Support for multiple flavors (dev, staging, production, etc.)
-- Automatic code generation with type-safe methods
-- Plural handling and parameterized strings
-- Works completely offline
-
-### Paid (with flutterlocalisation.com)
-- **Manage translations** via web dashboard with your team
-- **Live updates** - update translations without app releases
-- **Git integration** - automatic ARB file sync (GitHub, GitLab, Bitbucket)
-- **Translation memory** and AI-assisted translation
-- **Team collaboration** with granular permissions
-- **Multi-project** and multi-flavor management
-
----
-
-## Installation
-
-### 1. Install CLI Tool
-
-```bash
-dart pub global activate flutter_localisation
-```
-
-### 2. Add to PATH (if needed)
-
-Add this to your shell config (`.bashrc`, `.zshrc`, etc.):
-
-```bash
-export PATH="$PATH":"$HOME/.pub-cache/bin"
-```
-
-### 3. Add to Your Flutter Project
+## Install
 
 ```yaml
-# pubspec.yaml
 dependencies:
   flutter_localisation: ^2.7.0
   flutter_localizations:
@@ -79,72 +48,60 @@ flutter:
   generate: true
 ```
 
-Then run:
-```bash
-flutter pub get
-```
-
----
-
-## Quick Start
-
-### Step 1: Set Up Project on Dashboard
-
-1. Sign up at [flutterlocalisation.com](https://flutterlocalisation.com) and create a project
-2. Add languages and translation keys via the web interface
-3. Connect your Git repository (GitHub, GitLab, or Bitbucket)
-4. The backend automatically generates ARB files and pushes them to your connected Git repo
-
-### Step 2: Clone ARB Files to Your Flutter Project
+And the code generator:
 
 ```bash
-cd your_flutter_project
-git clone <your-arb-repository-url> arbs
+dart pub global activate flutter_localisation
 ```
 
-Your structure will look like:
+## Quick start
+
+### 1. Put your ARB files in a flavor folder
+
 ```
-your_project/
-├── arbs/
-│   ├── production/
-│   │   ├── app_en.arb
-│   │   ├── app_es.arb
-│   └── staging/
-│       ├── app_en.arb
-│       ├── app_es.arb
+arbs/
+  production/
+    app_en.arb
+    app_es.arb
+  staging/
+    app_en.arb
 ```
 
-### Step 3: Generate Localization Code
+Write them by hand, or let the dashboard push them to your Git repository
+(GitHub, GitLab or Bitbucket) and clone that repository as `arbs/`.
 
-Run the CLI tool to generate type-safe Dart code from the ARB files:
+### 2. Generate the code
 
 ```bash
 flutter_localisation arbs production
 ```
 
-Replace `production` with your flavor name. This generates all the necessary localization code.
+This pulls the folder if it is a Git repository, runs `gen-l10n`, writes
+`lib/generated_translation_methods.dart` and refreshes the analyzer cache.
+Restart the app afterwards: hot reload does not pick up regenerated code.
 
-### Step 4: Configure Your Flutter App
+### 3. Wire it up
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_localisation/flutter_localisation.dart';
-import 'package:your_app/localization/generated/app_localizations.dart';
-import 'package:your_app/generated_translation_methods.dart';
 
-void main() {
-  final translationService = TranslationService(
-    config: TranslationConfig.freeUser(),
-  );
+import 'generated_translation_methods.dart';
+import 'localization/generated/app_localizations.dart';
 
-  runApp(MyApp(translationService: translationService));
+final translations = TranslationService(
+  config: TranslationConfig.freeUser(),
+);
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await translations.initialize();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final TranslationService translationService;
-
-  const MyApp({required this.translationService});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -157,381 +114,193 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
-        builder: (context) {
-          final localizations = AppLocalizations.of(context);
-          return TranslationProvider(
-            service: translationService,
-            generatedLocalizations: localizations,
-            child: HomePage(),
-          );
-        },
+        builder: (context) => TranslationProvider(
+          service: translations,
+          generatedLocalizations: AppLocalizations.of(context),
+          child: const HomePage(),
+        ),
       ),
     );
   }
 }
 ```
 
-#### Optional: Enable Live Updates (Paid Plans)
-
-If you have a paid plan and want live updates at runtime:
-
-1. Get your API credentials from the dashboard:
-   - Go to workspace settings and copy your **Live Update API Key** (`sk_live_...`)
-   - Note your **Project ID** from project settings
-
-2. Update your configuration:
+### 4. Use it
 
 ```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final translationService = TranslationService(
-    config: TranslationConfig.paidUser(
-      secretKey: 'sk_live_your_key_here',
-      projectId: 123,
-      flavorName: 'production',
-      supportedLocales: ['en', 'es', 'fr'],
-      enableLogging: true,
-    ),
-  );
-
-  // Initialize to enable live updates
-  await translationService.initialize();
-
-  runApp(MyApp(translationService: translationService));
-}
+Text(context.tr.hello('Sam'));
+Text(context.tr.itemsInCart(3));
+Text(context.tr.notificationFrom('female'));
+Text(context.tr.lastSeen(DateTime.now()));
 ```
 
-### Step 5: Use Translations in Your Code
+## Live updates
+
+Live updates come with a paid plan on
+[flutterlocalisation.com](https://flutterlocalisation.com). Copy the live update
+key (`sk_live_...`) from the Live updates page and the project id from the
+project settings:
 
 ```dart
-class HomePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr.appTitle),
-      ),
-      body: Column(
-        children: [
-          // Simple string
-          Text(context.tr.hello("World")),
+final translations = TranslationService(
+  config: TranslationConfig(
+    secretKey: const String.fromEnvironment('FL_SECRET_KEY'),
+    projectId: 42,
+    flavorName: 'production',
+    supportedLocales: ['en', 'es', 'es-MX', 'ar'],
+    backgroundCheckInterval: const Duration(minutes: 30),
+  ),
+);
+```
 
-          // Plurals
-          Text(context.tr.itemCount(5)),
+`initialize()` loads the cached updates and fetches new ones in the
+background. Edit a string in the dashboard, publish a live update, and call
+`context.translations?.refresh()` (or wait for the next check) to show it.
 
-          // Manual refresh button
-          ElevatedButton(
-            onPressed: () {
-              context.translations?.fetchAndApplyUpdates();
-            },
-            child: Text('Refresh Translations'),
-          ),
-        ],
-      ),
-    );
+How an update is applied:
+
+- It goes through the same ICU rules as `flutter gen-l10n`, so plurals,
+  `select`, nested messages and placeholder formats come out the same as the
+  bundled string.
+- A key the update does not carry keeps the bundled string. On an `es-MX`
+  device a live `es-MX` string wins, then the bundled `es-MX` one, then a live
+  `es` string.
+- When a new release ships ARBs newer than the cached updates, the cache is
+  cleared, so the release never shows stale copy.
+- A malformed string falls back to the bundled one instead of showing raw ICU.
+
+Keep the key out of source control: pass it with
+`--dart-define=FL_SECRET_KEY=...` as the example does.
+
+## Message types
+
+```json
+{
+  "hello": "Hello {name}!",
+  "itemsInCart": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
+  "notificationFrom": "{gender, select, male{He sent you a message} female{She sent you a message} other{They sent you a message}}",
+  "orderTotal": "Total: {amount}",
+  "@orderTotal": {
+    "placeholders": {
+      "amount": {"type": "double", "format": "simpleCurrency", "optionalParameters": {"name": "USD"}}
+    }
   }
 }
 ```
 
-### Step 6: Update Translations
+Every plural category your languages use works, including Arabic `two`, `few`
+and `many`. Placeholder `type`, `format`, `optionalParameters` and
+`isCustomDateFormat` are read from the template ARB and applied to live
+strings too.
 
-When you need to update translations:
+## Flavors
 
-1. Edit translations on the dashboard at flutterlocalisation.com
-2. Changes are automatically pushed to Git
-3. Run: `flutter_localisation arbs production` (handles everything automatically)
-4. **Fully stop and restart your app** (hot reload/restart will NOT work)
-5. For paid plans with live updates, your app can also fetch changes automatically at runtime
-
----
-
-## Generate Localization After ARB Changes
-
-Whenever you update ARB files:
+One folder per flavor, generated with the same command:
 
 ```bash
-flutter_localisation arbs your_flavor_name
+flutter_localisation arbs staging
+flutter_localisation arbs production
 ```
 
-This single command does everything needed:
-- Pulls latest changes from Git (if the ARB folder is a Git repository)
-- Regenerates standard Flutter localization files in `lib/localization/generated/`
-- Generates extension methods file at `lib/generated_translation_methods.dart`
-- Invalidates Dart analysis cache (`.dart_tool/`)
-- Runs `flutter pub get` to refresh dependencies
+Pass the matching `flavorName` to `TranslationConfig` so live updates come from
+the right flavor.
 
-**Important:** After running this command, you **must fully stop and restart your app**. Hot reload (r) or hot restart (R) will NOT work because the compiled code needs to be rebuilt with the new translations.
+## The dashboard
 
----
+[![FlutterLocalisation translation dashboard](https://flutterlocalisation.com/assets/screenshots/dashboard-main.png?v=2)](https://flutterlocalisation.com)
 
-## Configuration Options
+- Edit keys with your team, with roles per project and flavor.
+- AI translation and translation memory.
+- Two way Git sync of the ARB files.
+- Live updates, published per flavor.
 
-### TranslationConfig
+Free tools, no signup:
+[ARB Editor](https://flutterlocalisation.com/tools/arb-editor),
+[ARB Diff](https://flutterlocalisation.com/tools/arb-diff),
+[l10n.yaml Generator](https://flutterlocalisation.com/tools/l10n-yaml-generator),
+[Locale Explorer](https://flutterlocalisation.com/tools/flutter-locale-explorer).
 
-```dart
-TranslationConfig({
-  String? secretKey,              // API key from dashboard (paid only)
-  int? projectId,                 // Project ID from dashboard (paid only)
-  String? flavorName,             // Flavor name (e.g., 'production')
-  List<String>? supportedLocales, // Languages to fetch updates for
-  bool enableLogging = true,      // Debug logs
-})
-```
+| | Free | Starter | Growth | Business |
+| --- | --- | --- | --- | --- |
+| Projects | 2 | 6 | 20 | Unlimited |
+| Translation keys | 500 | 15,000 | 75,000 | 300,000 |
+| Team members | 3 | 8 | 25 | 100 |
+| Live updates | | ✓ | ✓ | ✓ |
+| Git sync and AI translation | ✓ | ✓ | ✓ | ✓ |
 
-### Factory Constructors
+Limits count unique keys, not keys times languages, so adding a language is
+free on every plan. Starter is 29 EUR a month or 249 EUR a year; see
+[pricing](https://flutterlocalisation.com/#pricing). Businesses can pay by
+invoice and bank transfer.
 
-```dart
-// For free users (local only)
-TranslationService.freeUser()
+## From the terminal and coding agents
 
-// For paid users (manual config)
-TranslationService(config: TranslationConfig(...))
-```
-
----
-
-## ARB File Format
-
-### Basic Translation
-```json
-{
-  "key": "value"
-}
-```
-
-### With Placeholders
-```json
-{
-  "greeting": "Hello {name}!",
-  "@greeting": {
-    "placeholders": {
-      "name": {"type": "String"}
-    }
-  }
-}
-```
-
-### With Plurals
-```json
-{
-  "itemCount": "{count, plural, =0{No items} =1{One item} other{{count} items}}",
-  "@itemCount": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  }
-}
-```
-
----
-
-## How It Works
-
-### For Free Users
-1. You create ARB files locally
-2. CLI tool generates type-safe Dart code
-3. Translations are bundled with your app
-4. Everything works offline
-
-### For Paid Users
-1. You manage translations on flutterlocalisation.com
-2. Translations sync to Git automatically
-3. CLI tool generates code from ARB files
-4. **At runtime**, app checks for updates via API
-5. If updates exist, they override bundled translations
-6. Updates are cached for offline use
-7. Falls back to bundled translations if API unavailable
-
----
-
-## Manage from the terminal & Claude
-
-Add, edit, delete and AI-translate keys from the shell or from Claude with the companion
-**[`flutter_localisation_cli`](https://pub.dev/packages/flutter_localisation_cli)** package
-(pure Dart — no Flutter SDK needed):
+The companion
+[`flutter_localisation_cli`](https://pub.dev/packages/flutter_localisation_cli)
+package adds, edits and translates keys from the shell (pure Dart, no Flutter
+SDK needed):
 
 ```bash
 dart pub global activate flutter_localisation_cli
 
-fl login --token flk_live_xxx          # token from the dashboard -> API Keys
-fl add greeting --value "Hello" -t     # add + AI-translate all locales
-fl languages add fr de it -t           # add locales, AI-fill every key
-fl pull                                # sync the regenerated ARBs into arb_dir
+fl login --token flk_live_xxx          # token from the dashboard, API Keys
+fl add greeting --value "Hello" -t     # add and translate to every locale
+fl languages add fr de it -t           # add locales and fill every key
+fl pull                                # sync the ARBs into arb_dir
 ```
 
-`fl` talks to the service; the `flutter_localisation arbs` command above only runs gen-l10n on
-the ARBs already on disk. After `fl pull`, run `flutter gen-l10n` (or `flutter_localisation arbs <flavor>`).
-
-It also ships an MCP server (`fl_mcp`) so Claude can manage your translations. See the
-[flutter_localisation_cli README](https://pub.dev/packages/flutter_localisation_cli) for the
-full CLI reference and MCP setup.
-
-To teach a coding agent the whole workflow (bulk imports, `fl doctor` after a Flutter upgrade,
-live updates, never editing generated files by hand), install the agent skill in your app:
+It also ships an MCP server (`fl_mcp`) and an agent skill:
 
 ```bash
 npx skills add tajaouart/flutter_localisation_cli --skill flutter-localisation
 ```
 
+## Example app
 
-## Team Collaboration (Paid)
-
-### Add Team Members
-
-1. Go to workspace settings
-2. Click **"Add Member"**
-3. Enter email and set permissions:
-   - **Manager**: Full access to all projects
-   - **Member**: Granular access per project/flavor
-4. Set read/write permissions per flavor
-
-### Permission Levels
-- **Owner**: Full workspace access
-- **Manager**: Can manage members and edit all projects
-- **Member**: Custom access per project with optional write permissions
-
----
-
-## Flavors & Multi-Environment
-
-Use flavors to manage different environments:
-
-```
-arbs/
-├── development/
-│   ├── app_en.arb
-│   └── app_es.arb
-├── staging/
-│   ├── app_en.arb
-│   └── app_es.arb
-└── production/
-    ├── app_en.arb
-    └── app_es.arb
-```
-
-Generate for specific flavor:
 ```bash
-flutter_localisation arbs development
-flutter_localisation arbs staging
-flutter_localisation arbs production
+cd example
+flutter_localisation arbs usa
+flutter run
+# with live updates:
+flutter run --dart-define=FL_SECRET_KEY=sk_live_... --dart-define=FL_PROJECT_ID=42
 ```
 
-Configure your app:
-```dart
-TranslationService(
-  config: TranslationConfig(
-    flavorName: 'production',  // Changes based on build flavor
-    // ...
-  ),
-)
-```
+English, Spanish, Mexican Spanish, French, Arabic, Simplified and Traditional
+Chinese; two flavors (`usa`, `mexico`); plurals, `select`, nested messages,
+dates and numbers; and a live update panel.
 
----
+## API
 
-## Subscription Plans
-
-| Feature | Free | Starter | Growth | Business |
-|---------|------|---------|--------|----------|
-| **Projects** | 2 | 6 | 20 | Unlimited |
-| **Translation keys** | 500 | 15,000 | 75,000 | 300,000 |
-| **Team Members** | 3 | 8 | 25 | 100 |
-| **Live Updates** | ✗ | ✓ | ✓ | ✓ |
-| **Git Integration** | ✓ | ✓ | ✓ | ✓ |
-| **AI Translation** | ✓ | ✓ | ✓ | ✓ |
-
-Limits count unique keys, not keys × languages: adding a language is free on every plan.
-Starter is 29 EUR/month or 249 EUR/year; see [flutterlocalisation.com](https://flutterlocalisation.com/#pricing) for all plans. Businesses can pay by invoice and bank transfer from the Billing tab.
-
----
-
-## Example App
-
-Check out the [example](./example) folder for a complete working implementation with:
-- Multiple languages (English, Spanish, French)
-- Multiple flavors (USA, Mexico)
-- Live updates integration
-- Language switching
-- All translation types (simple, parameters, plurals)
-
----
+| | |
+| --- | --- |
+| `context.tr` | The generated translator. |
+| `context.translations` | The `TranslationService` above the widget. |
+| `initialize()` | Load cached updates and fetch new ones. |
+| `refresh()` | Fetch now. |
+| `hasOverride(locale, key)`, `getOverride(locale, key)` | What a live update set. |
+| `getAllOverridesForLocale(locale)`, `getCacheStatus()` | Live strings per locale. |
+| `clearCache()` | Drop live strings and show the bundled ones. |
 
 ## Troubleshooting
 
-### ARB files not found
-- Ensure the path is correct: `flutter_localisation <folder> <flavor>`
-- Check that ARB files exist in the specified flavor folder
-- ARB files must be named like `app_en.arb`, `app_es.arb`, etc.
+**Generated code is missing or stale.** Run
+`flutter_localisation arbs <flavor>` again and fully restart the app. Check
+that `flutter: generate: true` is in `pubspec.yaml` and the files are named
+`app_<locale>.arb`.
 
-### Generated code not working
-- The CLI tool automatically handles cache invalidation
-- If still having issues, ensure `flutter: generate: true` is in `pubspec.yaml`
-- Check that `l10n.yaml` exists and points to correct ARB directory
-- As a last resort, manually run `flutter clean && flutter pub get`
+**Live updates do not show.** Check the key starts with `sk_live_`, the
+project id and flavor match the dashboard, and the plan includes live
+updates. On Android, release builds need
+`<uses-permission android:name="android.permission.INTERNET"/>` in the main
+manifest. Logs are on by default (`enableLogging`).
 
-### Live updates not working
-- Verify your API key is correct (starts with `sk_live_`)
-- Check project ID matches your dashboard
-- Ensure you have a paid subscription
-- Check network connectivity
-- Enable logging to see detailed error messages
+**A key is missing from `context.tr`.** A key named like a
+`Translator` member (`refresh`, `translate`) is hidden; the generator warns
+about it.
 
-### Translations not updating
-1. Simply run: `flutter_localisation arbs your_flavor`
-   - This automatically pulls from Git, regenerates code, and clears caches
-2. Hot restart (press `R`) or fully restart your app
-3. No manual cache clearing or pub get needed!
+## Links
 
----
+- [Issues](https://github.com/tajaouart/flutter_localisation/issues)
+- [flutterlocalisation.com](https://flutterlocalisation.com)
 
-## API Reference
-
-### Context Extensions
-
-```dart
-// Access translator
-context.tr.yourTranslationKey
-
-// Access service
-context.translations?.fetchAndApplyUpdates()
-```
-
-### TranslationService Methods
-
-```dart
-// Initialize service
-await service.initialize()
-
-// Fetch updates from API
-await service.fetchAndApplyUpdates()
-
-// Check if translation exists in cache
-service.hasOverride('key', 'locale')
-
-// Get cached translation
-service.getOverride('key', 'locale')
-
-// Get cache status
-service.getCacheStatus()
-```
-
----
-
-## Contributing
-
-Contributions are welcome! Please visit our [GitHub repository](https://github.com/tajaouart/flutter_localisation).
-
----
-
-## Support
-
-- **Documentation**: This README
-- **Example App**: [./example](./example)
-- **Issues**: [GitHub Issues](https://github.com/tajaouart/flutter_localisation/issues)
-- **Website**: [flutterlocalisation.com](https://flutterlocalisation.com)
-
----
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
+MIT licensed.
