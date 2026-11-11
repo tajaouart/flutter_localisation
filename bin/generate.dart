@@ -18,6 +18,35 @@ class FlutterTranslationGenerator {
   late final String _projectRoot;
   String? _localizationsPath;
   String? _outputPath;
+  Map<String, Map<String, dynamic>> _placeholders =
+      <String, Map<String, dynamic>>{};
+
+  /// `use-escaping: true` in l10n.yaml: live updates then arrive with ARB
+  /// quoting, which the translator has to read the same way gen-l10n does.
+  bool _useEscaping = false;
+
+  /// Members of [Translator] itself. An ARB key with one of these names is
+  /// shadowed: `context.tr.refresh` calls the member, not the extension.
+  static const Set<String> _translatorMembers = <String>{
+    'translate',
+    'refresh',
+    'cacheStatus',
+    'context',
+    'service',
+    'generatedLocalizations',
+    'hashCode',
+    'runtimeType',
+    'toString',
+    'noSuchMethod',
+  };
+
+  /// Placeholder keys that change how a value is rendered.
+  static const Set<String> _formattingKeys = <String>{
+    'type',
+    'format',
+    'isCustomDateFormat',
+    'optionalParameters',
+  };
 
   Future<void> generate() async {
     _findProjectRoot();
@@ -33,6 +62,8 @@ class FlutterTranslationGenerator {
 
     final String content = await _readLocalizationsFile();
     final List<TranslationMethod> methods = _extractMethods(content);
+    _placeholders = await _readPlaceholderMetadata();
+    _useEscaping = await _readUseEscaping();
 
     if (methods.isEmpty) {
       throw Exception(
@@ -46,6 +77,15 @@ class FlutterTranslationGenerator {
     print('✅ Generated ${methods.length} translation methods:');
     for (final TranslationMethod method in methods) {
       print('   ✓ ${method.name}${method.isGetter ? ' (getter)' : ''}');
+    }
+    for (final TranslationMethod method in methods) {
+      if (_translatorMembers.contains(method.name)) {
+        print(
+          '⚠️ "${method.name}" is also a Translator member, so '
+          'context.tr.${method.name} does not reach this key. Rename the key, '
+          'or call GeneratedTranslationMethods(context.tr).${method.name}.',
+        );
+      }
     }
   }
 
@@ -129,16 +169,16 @@ class FlutterTranslationGenerator {
     }
 
     final String classContent = content.substring(classStart, classEnd);
-    final List<String> lines = classContent.split('\n');
+    // Declarations can wrap over several lines once the file is formatted,
+    // so read statements up to ";" rather than lines.
+    final String body = classContent
+        .substring(classContent.indexOf('{') + 1)
+        .replaceAll(RegExp(r'^\s*///.*$', multiLine: true), '');
 
-    for (final String line in lines) {
-      final String trimmed = line.trim();
-
-      if ((trimmed.startsWith('String ') ||
-              trimmed.startsWith('String get ')) &&
-          trimmed.endsWith(';') &&
-          !trimmed.contains('static')) {
-        final TranslationMethod? method = _parseMethod(trimmed);
+    for (final String statement in body.split(';')) {
+      final String trimmed = statement.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (trimmed.startsWith('String ') && !trimmed.contains('static')) {
+        final TranslationMethod? method = _parseMethod('$trimmed;');
         if (method != null &&
             method.name != 'of' &&
             method.name != 'localeName') {
@@ -178,6 +218,7 @@ class FlutterTranslationGenerator {
     final List<MethodParameter> parameters = <MethodParameter>[];
     if (paramSection.isNotEmpty) {
       for (final String param in paramSection.split(',')) {
+        if (param.trim().isEmpty) continue;
         final List<String> parts = param.trim().split(' ');
         if (parts.length >= 2) {
           parameters.add(MethodParameter(type: parts[0], name: parts[1]));
@@ -241,7 +282,10 @@ class FlutterTranslationGenerator {
       buffer.writeln("      '${method.name}',");
       buffer.writeln('      {},');
       // Use direct property access on dynamic - this works on all platforms
-      buffer.writeln('      () => generatedLocalizations.${method.name} as String,');
+      buffer.writeln(
+        '      () => generatedLocalizations.${method.name} as String,',
+      );
+      if (_useEscaping) buffer.writeln('      useEscaping: true,');
       buffer.writeln('    );');
       buffer.writeln('  }');
     } else {
@@ -262,15 +306,106 @@ class FlutterTranslationGenerator {
       buffer.writeln(
         '      () => generatedLocalizations.${method.name}($argsList) as String,',
       );
+      final Map<String, dynamic>? placeholders = _placeholders[method.name];
+      if (placeholders != null && placeholders.isNotEmpty) {
+        buffer.writeln('      placeholders: ${_dartLiteral(placeholders)},');
+      }
+      if (_useEscaping) buffer.writeln('      useEscaping: true,');
       buffer.writeln('    );');
       buffer.writeln('  }');
     }
+  }
+
+  /// The `placeholders` metadata of each message in the template ARB, kept
+  /// to the keys that affect formatting. Live updates carry only the message
+  /// text, so the generated methods hand this to the translator.
+  Future<Map<String, Map<String, dynamic>>> _readPlaceholderMetadata() async {
+    final Map<String, Map<String, dynamic>> result =
+        <String, Map<String, dynamic>>{};
+    try {
+      final File l10nFile = File('$_projectRoot/l10n.yaml');
+      if (!l10nFile.existsSync()) return result;
+      final String l10n = await l10nFile.readAsString();
+      final String arbDir =
+          RegExp(r'arb-dir:\s*(.+)').firstMatch(l10n)?.group(1)?.trim() ??
+              'lib/l10n';
+      final String template = RegExp(r'template-arb-file:\s*(.+)')
+              .firstMatch(l10n)
+              ?.group(1)
+              ?.trim() ??
+          'app_en.arb';
+      final File arbFile = File('$_projectRoot/$arbDir/$template');
+      if (!arbFile.existsSync()) return result;
+
+      final Object? arb = jsonDecode(await arbFile.readAsString());
+      if (arb is! Map<String, dynamic>) return result;
+      for (final MapEntry<String, dynamic> entry in arb.entries) {
+        if (!entry.key.startsWith('@') || entry.key.startsWith('@@')) continue;
+        final Object? meta = entry.value;
+        if (meta is! Map<String, dynamic>) continue;
+        final Object? placeholders = meta['placeholders'];
+        if (placeholders is! Map<String, dynamic>) continue;
+
+        final Map<String, dynamic> kept = <String, dynamic>{};
+        for (final MapEntry<String, dynamic> placeholder
+            in placeholders.entries) {
+          final Object? fields = placeholder.value;
+          if (fields is! Map<String, dynamic>) continue;
+          final Map<String, dynamic> formatting = <String, dynamic>{
+            for (final MapEntry<String, dynamic> field in fields.entries)
+              if (_formattingKeys.contains(field.key) && field.value != null)
+                field.key: field.value,
+          };
+          if (formatting.isNotEmpty) kept[placeholder.key] = formatting;
+        }
+        if (kept.isNotEmpty) result[entry.key.substring(1)] = kept;
+      }
+    } on Exception catch (e) {
+      print('Warning: Could not read placeholder metadata: $e');
+    }
+    return result;
+  }
+
+  String _dartLiteral(final Object? value, {final bool isConst = true}) {
+    if (value is Map) {
+      final String entries = value.entries
+          .map(
+            (final MapEntry<dynamic, dynamic> e) =>
+                '${_dartLiteral(e.key.toString())}: '
+                '${_dartLiteral(e.value, isConst: false)}',
+          )
+          .join(', ');
+      return "${isConst ? 'const ' : ''}<String, dynamic>{$entries}";
+    }
+    if (value is String) {
+      final String escaped = value
+          .replaceAll(r'\', r'\\')
+          .replaceAll("'", r"\'")
+          .replaceAll(r'$', r'\$')
+          .replaceAll('\n', r'\n');
+      return "'$escaped'";
+    }
+    return '$value';
+  }
+
+  Future<bool> _readUseEscaping() async {
+    final File l10nFile = File('$_projectRoot/l10n.yaml');
+    if (!l10nFile.existsSync()) return false;
+    final RegExpMatch? match =
+        RegExp(r'^use-escaping:\s*(\w+)', multiLine: true)
+            .firstMatch(await l10nFile.readAsString());
+    return match?.group(1) == 'true';
   }
 
   Future<void> _writeGeneratedFile(final String content) async {
     final File outputFile = File(_outputPath!);
     await outputFile.parent.create(recursive: true);
     await outputFile.writeAsString(content);
+    // Formatted, so a project that checks `dart format` stays green. A missing
+    // `dart` on PATH only leaves the file unformatted.
+    try {
+      await Process.run('dart', <String>['format', outputFile.path]);
+    } on ProcessException catch (_) {}
   }
 
   Future<String?> _extractArbTimestamp() async {

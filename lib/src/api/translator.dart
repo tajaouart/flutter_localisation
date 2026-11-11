@@ -12,7 +12,6 @@ class Translator {
   final TranslationService service;
   final dynamic generatedLocalizations;
 
-  // Internal cache for the expensive-to-create ICU message processor.
   ICUMessageProcessor? _cachedProcessor;
 
   Translator({
@@ -24,27 +23,43 @@ class Translator {
   /// The core translation method.
   ///
   /// It first checks the FlutterLocalisation for an override. If one exists,
-  /// it processes it using an optimized ICU message processor. Otherwise, it
-  /// falls back to the standard generated translation.
+  /// it is rendered by the ICU processor with the same rules gen-l10n uses.
+  /// Otherwise, or when the override cannot be rendered, it falls back to the
+  /// standard generated translation.
+  ///
+  /// [placeholders] is the ARB `placeholders` metadata of the message, which
+  /// the generated methods pass so dates and numbers in an override get the
+  /// same formatting as the bundled string. [useEscaping] is the project's
+  /// `use-escaping` setting, also passed by the generated methods.
   String translate(
     final String key,
     final Map<String, dynamic> arguments,
-    final String Function() fallbackGenerator,
-  ) {
+    final String Function() fallbackGenerator, {
+    final Map<String, dynamic>? placeholders,
+    final bool useEscaping = false,
+  }) {
     final Locale locale = Localizations.localeOf(context);
     final String? overrideTemplate = _overrideFor(locale, key);
 
-    if (overrideTemplate != null) {
-      // An override exists, process it efficiently.
-      return _processFlutterLocalisationOverride(
-        key,
+    if (overrideTemplate == null) return fallbackGenerator();
+
+    try {
+      return _processorFor(locale).format(
         overrideTemplate,
         arguments,
+        placeholders: placeholders,
+        useEscaping: useEscaping,
       );
+    } on Object catch (e) {
+      // A malformed override must not reach the screen as raw ICU.
+      _log('Could not render the override for "$key", using the bundled '
+          'string: $e');
+      try {
+        return fallbackGenerator();
+      } on Object catch (_) {
+        return _basicPlaceholderReplacement(overrideTemplate, arguments);
+      }
     }
-
-    // No override found, use the standard generated translation.
-    return fallbackGenerator();
   }
 
   /// The override for [key], resolved from the most specific locale the cache
@@ -57,54 +72,27 @@ class Translator {
     return null;
   }
 
-  /// Every override the cache holds for [locale], from the same resolved key
-  /// the single-key lookup uses — otherwise a Brazilian device could take its
-  /// first string from `pt-BR` and the rest of the screen from `pt`.
-  Map<String, String> _overridesFor(final Locale locale) {
-    for (final String candidate in localeCacheKeys(locale)) {
-      final Map<String, String> overrides =
-          service.getAllOverridesForLocale(candidate);
-      if (overrides.isNotEmpty) return overrides;
-    }
-    return <String, String>{};
+  ICUMessageProcessor _processorFor(final Locale locale) {
+    final ICUMessageProcessor? cached = _cachedProcessor;
+    if (cached != null && cached.locale == locale) return cached;
+    _log('Created ICUMessageProcessor for ${locale.toLanguageTag()}');
+    return _cachedProcessor = ICUMessageProcessor(
+      locale,
+      const <String, String>{},
+      const <String, dynamic>{},
+      localeName: _generatedLocaleName(),
+    );
   }
 
-  /// Efficiently processes a FlutterLocalisation override string.
-  ///
-  /// It lazily creates and caches an ICUMessageProcessor instance for the current
-  /// locale, avoiding repeated creation for multiple translations on the same screen.
-  String _processFlutterLocalisationOverride(
-    final String key,
-    final String template,
-    final Map<String, dynamic> args,
-  ) {
+  /// gen-l10n formats with its own `localeName`; using the same one keeps
+  /// plural rules and number symbols identical to the bundled strings.
+  String? _generatedLocaleName() {
     try {
-      final Locale locale = Localizations.localeOf(context);
-
-      // --- PERFORMANCE OPTIMIZATION ---
-      // If our cached processor is null or for a different locale, create a new one.
-      if (_cachedProcessor == null || _cachedProcessor?.locale != locale) {
-        // Fetch ALL overrides for the current locale at once.
-        final Map<String, String> allOverridesForLocale =
-            _overridesFor(locale);
-
-        // Create a single, powerful processor for all of them.
-        _cachedProcessor = ICUMessageProcessor(
-          locale,
-          allOverridesForLocale,
-          <String, dynamic>{}, // Metadata can be added later if needed.
-        );
-        _log(
-          'Created and cached ICUMessageProcessor for ${locale.toLanguageTag()}',
-        );
-      }
-
-      // Use the cached processor to get the final string.
-      return _cachedProcessor!.getString(key, args);
-    } on Exception catch (e) {
-      _log('Error processing ICU override for key "$key": $e');
-      // Fallback to basic replacement if ICU processing fails.
-      return _basicPlaceholderReplacement(template, args);
+      // ignore: avoid_dynamic_calls
+      final Object? name = generatedLocalizations?.localeName;
+      return name is String ? name : null;
+    } on Object catch (_) {
+      return null;
     }
   }
 

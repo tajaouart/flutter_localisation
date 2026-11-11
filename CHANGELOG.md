@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+### Fixed
+- **A live update renders exactly like the bundled string.** The ICU engine behind live
+  updates is a real parser now: nested `plural` and `select`, every plural category
+  (`zero`, `one`, `two`, `few`, `many`, `other`), exact `=N` cases, and any spacing
+  around the keywords. It picks cases with the same rules as `flutter gen-l10n`.
+- Dates, currencies, compact numbers and percentages in a live update keep their format.
+  The generator reads each placeholder's `type`, `format`, `optionalParameters` and
+  `isCustomDateFormat` from the template ARB and passes them to the translator.
+- A malformed live update shows the bundled string instead of raw ICU text.
+- A `double` passed as a plural count no longer throws.
+- On a regional device, a key found only in the base language (`es` for `es-MX`) is
+  rendered from that language's template instead of showing `KEY_NOT_FOUND`.
+- The generator reads declarations that wrap over several lines, and warns when an ARB
+  key has the same name as a `Translator` member (`refresh`, `translate`, ...), which
+  hides it from `context.tr`.
+
 ## [2.7.0] - 2026-11-11
 ### Fixed
 - **A live update shows as soon as it lands.** `TranslationService` is now a `ChangeNotifier`

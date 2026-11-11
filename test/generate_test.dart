@@ -425,6 +425,74 @@ abstract class AppLocalizations {
     });
 
     group('Generated Code Quality Tests', () {
+      test('passes placeholder formats and use-escaping to the translator',
+          () async {
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
+abstract class AppLocalizations {
+  String lastSeen(
+    DateTime date,
+  );
+  String pronoun(String gender);
+}
+''',
+          arbContent: '''
+{
+  "lastSeen": "Last seen {date}",
+  "@lastSeen": {"placeholders": {"date": {"type": "DateTime", "format": "yMMMMd"}}},
+  "pronoun": "{gender, select, female{She} other{They}}"
+}
+''',
+        );
+        final File l10n = File(path.join(projectDir.path, 'l10n.yaml'));
+        await l10n.writeAsString('use-escaping: true\n', mode: FileMode.append);
+
+        final ProcessResult result = await _runGenerator(projectDir);
+
+        expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+        final String content = await File(
+          path.join(
+            projectDir.path,
+            'lib',
+            'generated_translation_methods.dart',
+          ),
+        ).readAsString();
+        // The wrapped declaration is read whole.
+        expect(content, contains('String lastSeen(DateTime date)'));
+        expect(content, contains("'format': 'yMMMMd'"));
+        expect('useEscaping: true'.allMatches(content).length, 2);
+        // Already formatted, so an app's `dart format` check stays green.
+        final String generatedPath =
+            '${projectDir.path}/lib/generated_translation_methods.dart';
+        final ProcessResult format = await Process.run('dart', <String>[
+          'format',
+          '--set-exit-if-changed',
+          '--output=none',
+          generatedPath,
+        ]);
+        expect(format.exitCode, 0, reason: '${format.stdout}');
+      });
+
+      test('warns when a key is shadowed by a Translator member', () async {
+        await _setupProject(
+          projectDir,
+          localizationContent: '''
+abstract class AppLocalizations {
+  String get refresh;
+}
+''',
+        );
+
+        final ProcessResult result = await _runGenerator(projectDir);
+
+        expect(result.exitCode, 0);
+        expect(
+          result.stdout,
+          contains('GeneratedTranslationMethods(context.tr).refresh'),
+        );
+      });
+
       test('should generate well-formatted Dart code', () async {
         // ARRANGE
         await _setupProject(

@@ -220,8 +220,9 @@ void main() {
       expect(result1, equals('Hello Alice!'));
       expect(result2, equals('Goodbye Bob!'));
 
-      // getAllOverridesForLocale should only be called once due to caching
-      verify(mockService.getAllOverridesForLocale('en')).called(1);
+      // Each override is rendered from its own template, so a key found in
+      // `en` is never looked up in another locale's map.
+      verifyNever(mockService.getAllOverridesForLocale(any));
     });
 
     testWidgets('handles empty override gracefully',
@@ -603,7 +604,10 @@ void main() {
       when(mockService.getAllOverridesForLocale('pt-BR'))
           .thenReturn(<String, String>{'hello': 'Oi'});
 
-      expect(await translateIn(tester, const Locale('pt', 'BR'), 'hello'), 'Oi');
+      expect(
+        await translateIn(tester, const Locale('pt', 'BR'), 'hello'),
+        'Oi',
+      );
     });
 
     testWidgets('falls back to the base language when no variant is published',
@@ -624,21 +628,29 @@ void main() {
       when(mockService.getAllOverridesForLocale('pt_BR'))
           .thenReturn(<String, String>{'hello': 'Oi'});
 
-      expect(await translateIn(tester, const Locale('pt', 'BR'), 'hello'), 'Oi');
+      expect(
+        await translateIn(tester, const Locale('pt', 'BR'), 'hello'),
+        'Oi',
+      );
     });
 
     testWidgets('separates the Chinese scripts',
         (final WidgetTester tester) async {
-      when(mockService.getOverride('zh-Hant', 'hello')).thenReturn('\u4f60\u597d\uff08\u7e41\uff09');
+      when(mockService.getOverride('zh-Hant', 'hello'))
+          .thenReturn('\u4f60\u597d\uff08\u7e41\uff09');
       when(mockService.getOverride('zh', 'hello')).thenReturn('\u4f60\u597d');
-      when(mockService.getAllOverridesForLocale('zh-Hant'))
-          .thenReturn(<String, String>{'hello': '\u4f60\u597d\uff08\u7e41\uff09'});
+      when(mockService.getAllOverridesForLocale('zh-Hant')).thenReturn(
+        <String, String>{'hello': '\u4f60\u597d\uff08\u7e41\uff09'},
+      );
 
       const Locale traditional = Locale.fromSubtags(
         languageCode: 'zh',
         scriptCode: 'Hant',
       );
-      expect(await translateIn(tester, traditional, 'hello'), '\u4f60\u597d\uff08\u7e41\uff09');
+      expect(
+        await translateIn(tester, traditional, 'hello'),
+        '\u4f60\u597d\uff08\u7e41\uff09',
+      );
     });
   });
 }
