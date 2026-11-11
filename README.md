@@ -39,7 +39,7 @@ copy.
 
 ```yaml
 dependencies:
-  flutter_localisation: ^2.7.0
+  flutter_localisation: ^2.7.1
   flutter_localizations:
     sdk: flutter
   intl: any

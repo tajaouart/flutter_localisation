@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [2.7.1] - 2026-11-11
+### Docs
+- New pub.dev page: shorter README, light mode screenshots and a language GIF of the
+  example app.
+
 ### Fixed
 - **A live update renders exactly like the bundled string.** The ICU engine behind live
   updates is a real parser now: nested `plural` and `select`, every plural category
