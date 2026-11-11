@@ -1,0 +1,15 @@
+{
+  "appTitle": "Mexico App",
+  "simpleGreeting": "早上好！",
+  "hello": "你好，{name}！",
+  "welcomeMessage": "欢迎回来，{username}！",
+  "itemsInCart": "{count, plural, =0{购物车是空的} other{{count} 件商品}}",
+  "notificationFrom": "{gender, select, male{他给你发了一条消息} female{她给你发了一条消息} other{对方给你发了一条消息}}",
+  "friendsInvited": "{gender, select, male{{count, plural, =0{他还没有邀请任何人} other{他邀请了 {count} 位朋友}}} female{{count, plural, =0{她还没有邀请任何人} other{她邀请了 {count} 位朋友}}} other{{count, plural, =0{还没有邀请任何人} other{邀请了 {count} 位朋友}}}}",
+  "lastSeen": "最后上线：{date}",
+  "eventStarts": "开始时间：{when}",
+  "orderTotal": "合计：{amount}",
+  "downloads": "下载量：{count}",
+  "progress": "已完成 {value}",
+  "refreshTranslations": "刷新翻译"
+}

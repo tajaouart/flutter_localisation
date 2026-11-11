@@ -1,0 +1,4 @@
+{
+  "simpleGreeting": "¡Buen día!",
+  "itemsInCart": "{count, plural, =0{Sin productos} =1{1 producto} other{{count} productos}}"
+}

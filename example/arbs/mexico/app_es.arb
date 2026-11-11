@@ -1,8 +1,15 @@
 {
   "appTitle": "Mexico App",
+  "simpleGreeting": "¡Buenos días!",
   "hello": "¡Hola {name}!",
   "welcomeMessage": "¡Bienvenido de vuelta, {username}!",
-  "simpleGreeting": "¡Buenos días!",
   "itemsInCart": "{count, plural, =0{Sin artículos} =1{1 artículo} other{{count} artículos}}",
-  "refresh": "Actualizar Traducciones"
+  "notificationFrom": "{gender, select, male{Él te envió un mensaje} female{Ella te envió un mensaje} other{Te enviaron un mensaje}}",
+  "friendsInvited": "{gender, select, male{{count, plural, =0{Él aún no ha invitado a nadie} =1{Él invitó a un amigo} other{Él invitó a {count} amigos}}} female{{count, plural, =0{Ella aún no ha invitado a nadie} =1{Ella invitó a un amigo} other{Ella invitó a {count} amigos}}} other{{count, plural, =0{Aún no han invitado a nadie} =1{Invitaron a un amigo} other{Invitaron a {count} amigos}}}}",
+  "lastSeen": "Última conexión: {date}",
+  "eventStarts": "Empieza: {when}",
+  "orderTotal": "Total: {amount}",
+  "downloads": "Descargas: {count}",
+  "progress": "{value} completado",
+  "refreshTranslations": "Actualizar traducciones"
 }

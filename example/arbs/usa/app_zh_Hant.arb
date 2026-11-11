@@ -1,0 +1,15 @@
+{
+  "appTitle": "USA App",
+  "simpleGreeting": "早安！",
+  "hello": "你好，{name}！",
+  "welcomeMessage": "歡迎回來，{username}！",
+  "itemsInCart": "{count, plural, =0{購物車是空的} other{{count} 件商品}}",
+  "notificationFrom": "{gender, select, male{他給你傳了一則訊息} female{她給你傳了一則訊息} other{對方給你傳了一則訊息}}",
+  "friendsInvited": "{gender, select, male{{count, plural, =0{他還沒有邀請任何人} other{他邀請了 {count} 位朋友}}} female{{count, plural, =0{她還沒有邀請任何人} other{她邀請了 {count} 位朋友}}} other{{count, plural, =0{還沒有邀請任何人} other{邀請了 {count} 位朋友}}}}",
+  "lastSeen": "最後上線：{date}",
+  "eventStarts": "開始時間：{when}",
+  "orderTotal": "合計：{amount}",
+  "downloads": "下載量：{count}",
+  "progress": "已完成 {value}",
+  "refreshTranslations": "重新整理翻譯"
+}

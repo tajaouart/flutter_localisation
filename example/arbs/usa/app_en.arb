@@ -1,8 +1,96 @@
 {
   "appTitle": "USA App",
-  "hello": "Hello {name}!",
-  "welcomeMessage": "Welcome back, {username}!",
   "simpleGreeting": "Good morning!",
+  "hello": "Hello {name}!",
+  "@hello": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeMessage": "Welcome back, {username}!",
+  "@welcomeMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
   "itemsInCart": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
-  "refresh": "Refresh Translations"
+  "@itemsInCart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationFrom": "{gender, select, male{He sent you a message} female{She sent you a message} other{They sent you a message}}",
+  "@notificationFrom": {
+    "placeholders": {
+      "gender": {
+        "type": "String"
+      }
+    }
+  },
+  "friendsInvited": "{gender, select, male{{count, plural, =0{He has not invited anyone yet} =1{He invited one friend} other{He invited {count} friends}}} female{{count, plural, =0{She has not invited anyone yet} =1{She invited one friend} other{She invited {count} friends}}} other{{count, plural, =0{They have not invited anyone yet} =1{They invited one friend} other{They invited {count} friends}}}}",
+  "@friendsInvited": {
+    "placeholders": {
+      "gender": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSeen": "Last seen {date}",
+  "@lastSeen": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMMd"
+      }
+    }
+  },
+  "eventStarts": "Starts {when}",
+  "@eventStarts": {
+    "placeholders": {
+      "when": {
+        "type": "DateTime",
+        "format": "MMMEd+jm"
+      }
+    }
+  },
+  "orderTotal": "Total: {amount}",
+  "@orderTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "double",
+        "format": "simpleCurrency",
+        "optionalParameters": {
+          "name": "USD"
+        }
+      }
+    }
+  },
+  "downloads": "Downloads: {count}",
+  "@downloads": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "progress": "{value} complete",
+  "@progress": {
+    "placeholders": {
+      "value": {
+        "type": "double",
+        "format": "percentPattern"
+      }
+    }
+  },
+  "refreshTranslations": "Refresh translations"
 }

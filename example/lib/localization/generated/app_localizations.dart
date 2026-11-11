@@ -5,9 +5,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_ar.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -95,9 +97,13 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
     Locale('en'),
     Locale('es'),
+    Locale('es', 'MX'),
     Locale('fr'),
+    Locale('zh'),
+    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
   ];
 
   /// No description provided for @appTitle.
@@ -106,35 +112,77 @@ abstract class AppLocalizations {
   /// **'USA App'**
   String get appTitle;
 
-  /// No description provided for @hello.
-  ///
-  /// In en, this message translates to:
-  /// **'Hello {name}!'**
-  String hello(Object name);
-
-  /// No description provided for @welcomeMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome back, {username}!'**
-  String welcomeMessage(Object username);
-
   /// No description provided for @simpleGreeting.
   ///
   /// In en, this message translates to:
   /// **'Good morning!'**
   String get simpleGreeting;
 
+  /// No description provided for @hello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello {name}!'**
+  String hello(String name);
+
+  /// No description provided for @welcomeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {username}!'**
+  String welcomeMessage(String username);
+
   /// No description provided for @itemsInCart.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
-  String itemsInCart(num count);
+  String itemsInCart(int count);
 
-  /// No description provided for @refresh.
+  /// No description provided for @notificationFrom.
   ///
   /// In en, this message translates to:
-  /// **'Refresh Translations'**
-  String get refresh;
+  /// **'{gender, select, male{He sent you a message} female{She sent you a message} other{They sent you a message}}'**
+  String notificationFrom(String gender);
+
+  /// No description provided for @friendsInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'{gender, select, male{{count, plural, =0{He has not invited anyone yet} =1{He invited one friend} other{He invited {count} friends}}} female{{count, plural, =0{She has not invited anyone yet} =1{She invited one friend} other{She invited {count} friends}}} other{{count, plural, =0{They have not invited anyone yet} =1{They invited one friend} other{They invited {count} friends}}}}'**
+  String friendsInvited(String gender, int count);
+
+  /// No description provided for @lastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen {date}'**
+  String lastSeen(DateTime date);
+
+  /// No description provided for @eventStarts.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts {when}'**
+  String eventStarts(DateTime when);
+
+  /// No description provided for @orderTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {amount}'**
+  String orderTotal(double amount);
+
+  /// No description provided for @downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads: {count}'**
+  String downloads(int count);
+
+  /// No description provided for @progress.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} complete'**
+  String progress(double value);
+
+  /// No description provided for @refreshTranslations.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh translations'**
+  String get refreshTranslations;
 }
 
 class _AppLocalizationsDelegate
@@ -148,21 +196,49 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'es', 'fr'].contains(locale.languageCode);
+      <String>['ar', 'en', 'es', 'fr', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when language+script codes are specified.
+  switch (locale.languageCode) {
+    case 'zh':
+      {
+        switch (locale.scriptCode) {
+          case 'Hant':
+            return AppLocalizationsZhHant();
+        }
+        break;
+      }
+  }
+
+  // Lookup logic when language+country codes are specified.
+  switch (locale.languageCode) {
+    case 'es':
+      {
+        switch (locale.countryCode) {
+          case 'MX':
+            return AppLocalizationsEsMx();
+        }
+        break;
+      }
+  }
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'ar':
+      return AppLocalizationsAr();
     case 'en':
       return AppLocalizationsEn();
     case 'es':
       return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(
