@@ -12,6 +12,8 @@ A complete Flutter localization solution that combines:
 - **Live updates** via [flutterlocalisation.com](https://flutterlocalisation.com) (optional, paid feature)
 - **Flavor-based** localization structure for multi-environment apps
 
+> Native iOS app with an Xcode String Catalog? The same live updates are in [flutter_localisation_ios](https://github.com/tajaouart/flutter_localisation_ios).
+
 > 🧰 **Free online tools (no signup):** [ARB Editor](https://flutterlocalisation.com/tools/arb-editor) · [ARB Diff](https://flutterlocalisation.com/tools/arb-diff) · [l10n.yaml Generator](https://flutterlocalisation.com/tools/l10n-yaml-generator) · [Locale Explorer](https://flutterlocalisation.com/tools/flutter-locale-explorer)
 
 ## See it in action
