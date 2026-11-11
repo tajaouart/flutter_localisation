@@ -24,6 +24,6 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib bin test
       - run: flutter analyze
       - run: flutter test
+      - run: dart format --output=none --set-exit-if-changed lib bin test
