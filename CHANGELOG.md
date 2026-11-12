@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2] - 2026-11-12
+### Fixed
+- **Removing a language no longer breaks `flutter analyze`.** `flutter gen-l10n` never
+  deletes the file of a language it stopped generating, so the old
+  `app_localizations_<language>.dart` stayed behind and failed the analyzer as soon as a
+  key was added. The generator now removes per-language files no ARB asks for.
+
 ## [2.7.1] - 2026-11-11
 ### Docs
 - New pub.dev page: shorter README, light mode screenshots and a language GIF of the

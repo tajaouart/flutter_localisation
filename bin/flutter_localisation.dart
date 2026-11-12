@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_localisation/src/stale_outputs.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 
@@ -103,6 +104,18 @@ Future<void> main(final List<String> args) async {
 
     // Verify the generated directory has the expected locale files
     final Directory outputDirectory = Directory(outputDir);
+    final List<String> stale = staleLocaleFiles(
+      generatedFiles: outputDirectory
+          .listSync()
+          .whereType<File>()
+          .map((final File f) => f.path),
+      outputFile: outputFile,
+      locales: arbFiles.map(arbLocale).whereType<String>(),
+    );
+    for (final String file in stale) {
+      File(file).deleteSync();
+      _logger.info('Removed ${path.basename(file)}: no ARB for that language.');
+    }
     final List<FileSystemEntity> generatedFiles = outputDirectory
         .listSync()
         .where(
