@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.7.3] - 2026-11-13
+### Changed
+- Live update requests carry the package version (`X-FL-Client`), so the service can tell
+  which versions are in use. Nothing else changes, and no version is ever refused.
+
 ## [2.7.2] - 2026-11-12
 ### Fixed
 - **Removing a language no longer breaks `flutter analyze`.** `flutter gen-l10n` never

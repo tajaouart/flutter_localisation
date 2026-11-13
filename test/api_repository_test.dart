@@ -1,13 +1,24 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_localisation/flutter_localisation.dart';
 import 'package:flutter_localisation/src/api/api_repository.dart';
+import 'package:flutter_localisation/src/version.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test('kPackageVersion is the version in pubspec.yaml', () {
+    expect(
+      RegExp(r'^version: (\S+)', multiLine: true)
+          .firstMatch(File('pubspec.yaml').readAsStringSync())!
+          .group(1),
+      kPackageVersion,
+    );
+  });
+
   group('ApiRepository', () {
     late TranslationConfig configuredConfig;
 
@@ -57,6 +68,10 @@ void main() {
           MockClient((final http.Request request) async {
         final Map<String, dynamic> body = jsonDecode(request.body);
         expect(body.containsKey('current_timestamp'), isFalse);
+        expect(
+          request.headers['X-FL-Client'],
+          'flutter_localisation/$kPackageVersion',
+        );
         expect(body['project_id'], 1);
         expect(body['flavor'], 'production');
 

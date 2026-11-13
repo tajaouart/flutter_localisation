@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_localisation/flutter_localisation.dart';
+import 'package:flutter_localisation/src/version.dart';
 import 'package:http/http.dart' as http;
 
 class ApiRepository {
@@ -42,6 +43,7 @@ class ApiRepository {
         headers: <String, String>{
           'Authorization': 'Bearer ${_config.secretKey}',
           'Content-Type': 'application/json; charset=UTF-8',
+          'X-FL-Client': 'flutter_localisation/$kPackageVersion',
         },
         body: jsonEncode(payload),
       );
